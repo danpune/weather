@@ -55,12 +55,17 @@ button[aria-pressed="true"]{background:var(--acc);border-color:var(--acc);color:
 #glance ul{margin:0;padding:0;list-style:none}
 #glance li{padding:3px 0}
 #ctable h2{margin:0 0 4px;font-size:1.1rem}
-#ctab{width:100%;font-size:1rem}
+#ctab{width:100%;font-size:.95rem}
 #ctab th{font-size:.82rem;color:var(--mut);font-weight:700}
-#ctab th,#ctab td{padding:8px 4px}
+#ctab th,#ctab td{padding:6px 3px}
 #ctab td:first-child{white-space:normal;position:static;width:100%}   /* names wrap so the table always fits the screen */
 .jump{white-space:normal;overflow-wrap:break-word}
-html.big #ctab{font-size:.9rem}
+html.big #ctab{font-size:.85rem}
+.tsub{display:none;color:var(--mut);font-weight:400;font-size:.88em}
+@media (max-width:389px){#ctab .em,#ctab .tf{display:none}}   /* most Android phones are 360 wide: drop icon and flag, keep the numbers */
+html.big #ctab .em,html.big #ctab .tf{display:none}
+@media (max-width:389px){html.big #ctab .tcol{display:none}html.big #ctab .tsub{display:block}}
+@media (max-width:340px){#ctab .tcol{display:none}#ctab .tsub{display:block}}   /* tiniest phones: time goes under the name */
 #ctab tr:last-child td{border-bottom:0}
 .jump{border:0;background:none;padding:0;min-height:0;font-weight:650;text-align:left;color:var(--ink);border-radius:6px}
 #list{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,350px),1fr));gap:12px;align-items:start;margin-top:12px}
@@ -340,6 +345,7 @@ const fmts={};
 function F(o){const k=JSON.stringify(o);return fmts[k]||(fmts[k]=new Intl.DateTimeFormat(LOC,Object.assign({hour12:H12},o)))}
 function wall(iso){return new Date(iso.length===10?iso+"T12:00Z":iso+"Z")}   // a city's local wall time, read back in UTC
 function hourAt(tz,d){return F({timeZone:tz,hour:"numeric",minute:parts(tz,d).mi?"2-digit":undefined}).format(d)}   // "6:30 AM" in half-hour zones
+function clockAt(tz,d){return F({timeZone:tz,hour:"numeric",minute:"2-digit"}).format(d)}
 function cap(t){return t.charAt(0).toUpperCase()+t.slice(1)}
 function isoIn(tz,d){const p=parts(tz,d),z=function(n){return String(n).padStart(2,"0")};return p.y+"-"+z(p.mo)+"-"+z(p.d)+"T"+z(p.h)+":"+z(p.mi)}
 function whenLbl(t){
@@ -730,14 +736,16 @@ function renderGlance(ready,at){
 function renderTable(snaps){
   const t=$("ctable");
   if(!Object.keys(snaps).length){t.hidden=true;return}
-  let h='<h2>All cities</h2><table id="ctab"><thead><tr><th>City</th><th>'+(shift?"Then":"Now")+'</th><th>High</th><th>Low</th></tr></thead><tbody>';
+  let h='<h2>All cities</h2><div class="scroll"><table id="ctab"><thead><tr><th>City</th><th class="tcol">Time</th><th>'+(shift?"Then":"Now")+'</th><th>High / Low</th></tr></thead><tbody>';
   cities.forEach(function(c,ci){
-    const k=key(c),f=wx[k]&&wx[k].f,s=snaps[k],name='<button type="button" class="jump" data-goto="'+ci+'">'+flag(c.cc)+esc(c.l||c.n)+'</button>';
-    if(!f||!s){h+='<tr><td>'+name+'</td><td colspan="3">…</td></tr>';return}
+    const k=key(c),f=wx[k]&&wx[k].f,s=snaps[k],when=shift&&s?s.date:new Date(),live=shift&&s?'':' data-ttz="'+esc(c.tz)+'"',   // live times tick
+      t=esc(clockAt(c.tz,when)),name='<button type="button" class="jump" data-goto="'+ci+'"><span class="tf">'+flag(c.cc)+'</span>'+esc(c.l||c.n)+'</button><small class="tsub"'+live+'>'+t+'</small>',
+      tm='<td class="tcol"'+live+'>'+t+'</td>';
+    if(!f||!s){h+='<tr><td>'+name+'</td>'+tm+'<td colspan="2">…</td></tr>';return}
     const j=dIdx(f,s),lk=wxLook(s.code,s.day);
-    h+='<tr><td>'+name+'</td><td><span aria-hidden="true">'+lk[0]+'</span> <b>'+T(s.temp)+'</b></td><td>'+T(f.daily.temperature_2m_max[j])+'</td><td>'+T(f.daily.temperature_2m_min[j])+'</td></tr>';
+    h+='<tr><td>'+name+'</td>'+tm+'<td><span class="em" aria-hidden="true">'+lk[0]+'</span> <b>'+T(s.temp)+'</b></td><td>'+T(f.daily.temperature_2m_max[j])+'\u202f/\u202f'+T(f.daily.temperature_2m_min[j])+'</td></tr>';
   });
-  t.innerHTML=h+'</tbody></table>';t.hidden=false;
+  t.innerHTML=h+'</tbody></table></div>';t.hidden=false;
 }
 function renderTimebar(ready){
   const bar=$("timebar"),r=$("tbRange");
@@ -775,6 +783,7 @@ function tick(){
   document.querySelectorAll("[data-clock]").forEach(function(el){el.textContent=timeLine(el.getAttribute("data-clock"))});
   document.querySelectorAll("[data-part]").forEach(function(el){const fw=el.getAttribute("data-feel"),p=partOfDay(parts(el.getAttribute("data-part"),now).h);el.textContent=fw?fw+" "+p:cap(p)});
   document.querySelectorAll("[data-now]").forEach(function(el){el.textContent=nowLine()});
+  document.querySelectorAll("[data-ttz]").forEach(function(el){el.textContent=clockAt(el.getAttribute("data-ttz"),now)});
   document.querySelectorAll("[data-ahead]").forEach(function(el){el.textContent=aheadTxt(el.getAttribute("data-ahead"))});
   statusLine();
 }
