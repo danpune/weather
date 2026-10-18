@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#1a5f9e">
 <meta name="color-scheme" content="light">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src https://api.open-meteo.com https://air-quality-api.open-meteo.com https://geocoding-api.open-meteo.com https://archive-api.open-meteo.com; manifest-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://static.cloudflareinsights.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://hits.sh; connect-src https://api.open-meteo.com https://air-quality-api.open-meteo.com https://geocoding-api.open-meteo.com https://archive-api.open-meteo.com https://cloudflareinsights.com; manifest-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'">
 <title>Weather — all your cities, side by side</title>
 <meta name="description" content="Weather for all your cities on one page: right now, the next week, the last two weeks and the past year. Free, no ads, no sign-up.">
 <meta name="mobile-web-app-capable" content="yes">
@@ -54,10 +54,15 @@ button[aria-pressed="true"]{background:var(--acc);border-color:var(--acc);color:
 .gwhen{margin:0 0 6px;color:var(--mut);font-size:.92rem}
 #glance ul{margin:0;padding:0;list-style:none}
 #glance li{padding:3px 0}
-#ctable h2{margin:0 0 4px;font-size:1.1rem}
-#ctab{width:100%;font-size:.95rem}
+#ctable h2{margin:0;font-size:1.1rem}
+#ctable .hdr{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:2px}
+.resort{border:0;background:none;min-height:36px;padding:4px 6px;color:var(--acc);font-weight:650;text-decoration:underline}
+.sorter{border:0;background:none;min-height:0;padding:6px 3px;font:inherit;font-weight:700;color:var(--mut);border-radius:6px;white-space:normal;line-height:1.15}   /* headings may wrap so the arrow never widens the table */
+#ctab th[aria-sort] .sorter{color:var(--acc)}
+#ctab{width:100%;font-size:.92rem}
 #ctab th{font-size:.82rem;color:var(--mut);font-weight:700}
-#ctab th,#ctab td{padding:6px 3px}
+#ctab th,#ctab td{padding:4px 3px}
+#ctab th{padding:0 0 2px}
 #ctab td:first-child{white-space:normal;position:static;width:100%}   /* names wrap so the table always fits the screen */
 .jump{white-space:normal;overflow-wrap:break-word}
 html.big #ctab{font-size:.85rem}
@@ -171,6 +176,7 @@ dialog ol{margin:4px 0;padding-left:22px}
 dialog li{margin:4px 0}
 footer{color:var(--mut);font-size:.9rem;margin-top:22px}
 footer a{color:var(--acc)}
+footer .hits{display:inline-block;line-height:0;border-radius:6px;overflow:hidden}
 #toast{position:fixed;left:50%;bottom:calc(18px + env(safe-area-inset-bottom));transform:translateX(-50%);background:#132033;color:#fff;padding:10px 16px;border-radius:14px;font-weight:600;z-index:50;width:max-content;max-width:calc(100% - 28px)}
 .timebar{position:sticky;bottom:0;z-index:20;margin-top:14px;padding:10px 14px calc(10px + env(safe-area-inset-bottom));background:#fff;border:1px solid var(--line);border-radius:16px 16px 0 0;box-shadow:0 -4px 14px rgba(16,32,51,.1)}
 .timebar.away{background:#fff6dc;border-color:#efc368}
@@ -242,6 +248,9 @@ footer a{color:var(--acc)}
 
 <footer>
   <p>Weather from <a href="https://open-meteo.com/" rel="noopener">Open-Meteo.com</a> (CC BY 4.0), checked every 30 minutes. No ads, no sign-up. Your list of cities is saved only on this device.</p>
+  <p><a class="hits" href="https://hits.sh/danpune.github.io/weather/" title="Total visits to this page"><img
+    src="https://hits.sh/danpune.github.io/weather.svg?style=for-the-badge&label=visits&color=1a5f9e&labelColor=14181d"
+    alt="Total visits to this page" width="112" height="28"></a></p>
 </footer>
 </div>
 
@@ -368,7 +377,8 @@ function hrsTxt(diff){
   const s=(h||"")+(m===30?"½":m===45?"¾":m===15?"¼":m?(h?":":"0:")+String(m).padStart(2,"0"):"");
   return s+(a<=60?" hr ":" hrs ")+(diff>0?"ahead of you":"behind you");
 }
-function aheadTxt(tz){const d=new Date(),p=parts(tz,d);return hrsTxt(Math.round((Date.UTC(p.y,p.mo-1,p.d,p.h,p.mi)-Math.floor(d/6e4)*6e4)/6e4)+d.getTimezoneOffset())}
+function offsetMin(tz){const d=new Date(),p=parts(tz,d);return Math.round((Date.UTC(p.y,p.mo-1,p.d,p.h,p.mi)-Math.floor(d/6e4)*6e4)/6e4)}
+function aheadTxt(tz){return hrsTxt(offsetMin(tz)+new Date().getTimezoneOffset())}
 function timeLine(tz,d){d=d||new Date();return F({timeZone:tz,hour:"numeric",minute:"2-digit"}).format(d)+" "+F({timeZone:tz,weekday:"long"}).format(d)}
 function partOfDay(h){return h<5?"night":h<12?"morning":h<17?"afternoon":h<21?"evening":"night"}
 function feel(f){return f<32?"Freezing":f<50?"Cold":f<62?"Cool":f<75?"Pleasant":f<86?"Warm":f<95?"Hot":"Very hot"}
@@ -399,7 +409,7 @@ function ago(t){const m=Math.round((Date.now()-t)/6e4);return m<1?"just now":m<6
 
 // ---------- state ----------
 let cities=(standalone()?savedList()||fromHash(location.hash):fromHash(location.hash)||savedList())||DEFAULT_LIST.map(function(c){return Object.assign({},c)});
-let wx={},lastOK=0,busy=false,again=false,tbOpen=false,failed=false,histFailed=false,shift=0,renderedHour=0,editing=false,editStart="",big=stored(K_BIG)===1;
+let wx={},lastOK=0,busy=false,again=false,tbOpen=false,tSort=null,tDir=1,failed=false,histFailed=false,shift=0,renderedHour=0,editing=false,editStart="",big=stored(K_BIG)===1;
 let arch=stored(K_ARCH)||{};
 const archBusy={},openSet={},sel2={},selM={};
 
@@ -736,8 +746,26 @@ function renderGlance(ready,at){
 function renderTable(snaps){
   const t=$("ctable");
   if(!Object.keys(snaps).length){t.hidden=true;return}
-  let h='<h2>All cities</h2><div class="scroll"><table id="ctab"><thead><tr><th>City</th><th class="tcol">Time</th><th>'+(shift?"Then":"Now")+'</th><th>High / Low</th></tr></thead><tbody>';
-  cities.forEach(function(c,ci){
+  // Spreadsheet-style sort: tap a heading; tap again to reverse. The cards keep your own order.
+  const val=function(ci){
+    const c=cities[ci],k=key(c),f=wx[k]&&wx[k].f,s=snaps[k];
+    if(tSort==="name")return (c.l||c.n).toLowerCase();
+    if(tSort==="time")return offsetMin(c.tz);
+    if(!f||!s)return null;
+    return tSort==="now"?s.temp:f.daily.temperature_2m_max[dIdx(f,s)];
+  };
+  const order=cities.map(function(c,i){return i});
+  if(tSort){
+    const v=order.map(val);
+    order.sort(function(a,b){const x=v[a],y=v[b];
+      if(x==null||y==null)return ((x==null)-(y==null))||a-b;   // missing values always last
+      return (typeof x==="string"?x.localeCompare(y):x-y)*tDir||a-b});
+  }
+  const th=function(k,label,cls){const on=tSort===k;
+    return '<th'+(cls?' class="'+cls+'"':'')+(on?' aria-sort="'+(tDir>0?"ascending":"descending")+'"':'')+'><button type="button" class="sorter" data-sort="'+k+'">'+label+(on?(tDir>0?"\u00a0▲":"\u00a0▼"):"")+'</button></th>'};   // no-break space keeps the arrow with its word
+  let h='<div class="hdr"><h2>All cities</h2>'+(tSort?'<button type="button" class="resort" data-sort="">↺ Your order</button>':'')+'</div>'
+    +'<div class="scroll"><table id="ctab"><thead><tr>'+th("name","City")+th("time","Time","tcol")+th("now",shift?"Then":"Now")+th("high","High / Low")+'</tr></thead><tbody>';
+  order.forEach(function(ci){const c=cities[ci];
     const k=key(c),f=wx[k]&&wx[k].f,s=snaps[k],when=shift&&s?s.date:new Date(),live=shift&&s?'':' data-ttz="'+esc(c.tz)+'"',   // live times tick
       t=esc(clockAt(c.tz,when)),name='<button type="button" class="jump" data-goto="'+ci+'"><span class="tf">'+flag(c.cc)+'</span>'+esc(c.l||c.n)+'</button><small class="tsub"'+live+'>'+t+'</small>',
       tm='<td class="tcol"'+live+'>'+t+'</td>';
@@ -825,7 +853,16 @@ $("list").addEventListener("click",function(e){
   const yb=t.closest("[data-year]");if(yb&&c){loadArchive(c);return}
   if(t.closest("[data-close]")){det.open=false;det.scrollIntoView({block:"nearest"})}
 });
-$("ctable").addEventListener("click",function(e){const b=e.target.closest("[data-goto]");if(b){const card=$("card-"+b.getAttribute("data-goto"));if(card)card.scrollIntoView({block:"start"})}});   // no #anchor: the address bar carries the city list
+$("ctable").addEventListener("click",function(e){
+  const sb=e.target.closest("[data-sort]");
+  if(sb){
+    const k=sb.getAttribute("data-sort");
+    if(!k)tSort=null;else if(tSort===k)tDir=-tDir;else{tSort=k;tDir=k==="name"?1:-1}   // names A-Z first; time and temperatures highest first
+    render();
+    const again=$("ctable").querySelector('[data-sort="'+(k||"name")+'"]');if(again)again.focus({preventScroll:true});
+    return;
+  }
+  const b=e.target.closest("[data-goto]");if(b){const card=$("card-"+b.getAttribute("data-goto"));if(card)card.scrollIntoView({block:"start"})}});   // no #anchor: the address bar carries the city list
 $("normals").addEventListener("toggle",function(){if(this.open){renderNormals();fillNormals()}});
 const canShare=/^https?:$/.test(location.protocol);
 $("shareBtn").hidden=!canShare;
@@ -999,5 +1036,6 @@ setInterval(tick,20000);
 setInterval(refresh,30*60*1000);
 document.addEventListener("visibilitychange",function(){if(document.visibilityState==="visible"){tick();if(Date.now()-lastOK>10*60*1000)refresh()}});
 </script>
+<!-- Cloudflare Web Analytics: anonymous, no cookies. "spa": false because the page rewrites its own address (the city list), which would otherwise count as extra page views --><script type='module' src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "7271996b0f234a3981511907aaa6188b", "spa": false}'></script><!-- End Cloudflare Web Analytics -->
 </body>
 </html>

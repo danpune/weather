@@ -10,7 +10,7 @@ Everyone's weather, side by side: one simple page for friends and family spread 
 - Add, remove, reorder and nickname cities; share your list as a link
 - Big text option, °F / °C, works on phones and computers, and can be added to the home screen
 
-A single HTML file: no build step, no cookies, no tracking. Your list of cities is saved only on your device.
+A single HTML file: no build step, no cookies. Visits are counted anonymously (the hits.sh badge in the footer and Cloudflare's cookie-free page-view statistics); your list of cities is saved only on your device and never sent anywhere.
 Open the page with `#selftest` at the end of the address to run its built-in checks.
 
 Weather data from [Open-Meteo.com](https://open-meteo.com/) (CC BY 4.0).
