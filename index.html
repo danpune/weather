@@ -6,11 +6,11 @@
 <meta name="theme-color" content="#1a5f9e">
 <meta name="color-scheme" content="light">
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src https://api.open-meteo.com https://air-quality-api.open-meteo.com https://geocoding-api.open-meteo.com https://archive-api.open-meteo.com; manifest-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'">
-<title>Family Weather — your cities side by side</title>
-<meta name="description" content="Weather for the whole family's cities on one page: right now, the next week, the last two weeks and the past year. Free, no ads, no sign-up.">
+<title>Weather — all your cities, side by side</title>
+<meta name="description" content="Weather for all your cities on one page: right now, the next week, the last two weeks and the past year. Free, no ads, no sign-up.">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-title" content="Family Weather">
+<meta name="apple-mobile-web-app-title" content="Weather">
 <link rel="icon" href="icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="manifest" href="manifest.json">
@@ -166,8 +166,8 @@ footer a{color:var(--acc)}
 <body>
 <div class="wrap">
 <header>
-  <h1>🌤️ Family Weather</h1>
-  <p class="tag">Everyone&rsquo;s weather on one page</p>
+  <h1>🌤️ Weather</h1>
+  <p class="tag">All your cities, side by side</p>
   <div class="bar">
     <span class="seg" role="group" aria-label="Temperature unit"><button id="uF" type="button">°F</button><button id="uC" type="button">°C</button></span>
     <button id="bigBtn" type="button">Aa Bigger text</button>
@@ -189,7 +189,7 @@ footer a{color:var(--acc)}
   </div>
   <div class="actions">
     <button id="editBtn" type="button" class="primary">✏️ Add, remove or reorder cities</button>
-    <button id="shareBtn" type="button" hidden>📤 Share with family</button>
+    <button id="shareBtn" type="button" hidden>📤 Share this page</button>
     <button id="homeBtn" type="button">📲 Put it on your home screen</button>
   </div>
   <details id="normals" class="panel">
@@ -216,7 +216,7 @@ footer a{color:var(--acc)}
 </div>
 
 <dialog id="howto" aria-labelledby="howtoT">
-  <h2 id="howtoT">📲 Put Family Weather on your home screen</h2>
+  <h2 id="howtoT">📲 Put this page on your home screen</h2>
   <p class="muted" style="margin-top:0">Then it opens like an app, with one tap.</p>
   <div id="hIos"><h3>iPhone or iPad</h3><ol><li>Open this page in <b>Safari</b>.</li><li>Tap the <b>Share</b> button (a square with an arrow pointing up). On newer iPhones it is inside the <b>⋯</b> menu.</li><li>Tap <b>Add to Home Screen</b>, then <b>Add</b>.</li></ol></div>
   <div id="hAnd"><h3>Android</h3><ol><li>Open this page in <b>Chrome</b>.</li><li>Tap the <b>⋮</b> menu at the top right.</li><li>Tap <b>Add to Home screen</b> (or <b>Install app</b>), then <b>Add</b>.</li></ol></div>
@@ -757,7 +757,7 @@ $("normals").addEventListener("toggle",function(){if(this.open){renderNormals();
 const canShare=/^https?:$/.test(location.protocol);
 $("shareBtn").hidden=!canShare;
 $("shareBtn").addEventListener("click",async function(){
-  const url=location.href,data={title:"Family Weather",text:"Weather for all our cities, side by side 🌤️",url:url};
+  const url=location.href,data={title:"Weather",text:"Weather for all our cities, side by side 🌤️",url:url};
   if(navigator.share){try{await navigator.share(data);return}catch(e){if(e&&e.name==="AbortError")return}}
   try{await navigator.clipboard.writeText(url);toast("Link copied. Paste it into WhatsApp or a message.")}catch(e){prompt("Copy this link:",url)}
 });

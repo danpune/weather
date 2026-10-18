@@ -1,4 +1,4 @@
-# Family Weather
+# Weather
 
 Everyone's weather, side by side: one simple page for friends and family spread across cities and time zones.
 
