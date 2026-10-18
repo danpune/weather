@@ -50,7 +50,8 @@ button[aria-pressed="true"]{background:var(--acc);border-color:var(--acc);color:
 #updated{margin:8px 0 0;color:var(--mut);font-size:.95rem}
 .warn{background:#fff4e5;border:1px solid #f5c48a;color:#7a3e00;border-radius:12px;padding:10px 12px;margin:10px 0}
 .panel{background:#fff;border:1px solid var(--line);border-radius:16px;padding:12px 16px;margin:12px 0}
-#glance h2{margin:0 0 4px;font-size:1.1rem}
+#glance h2{margin:0 0 2px;font-size:1.1rem}
+.gwhen{margin:0 0 6px;color:var(--mut);font-size:.92rem}
 #glance ul{margin:0;padding:0;list-style:none}
 #glance li{padding:3px 0}
 #list{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,350px),1fr));gap:12px;align-items:start;margin-top:12px}
@@ -190,7 +191,7 @@ footer a{color:var(--acc)}
   <div class="actions">
     <button id="editBtn" type="button" class="primary">✏️ Add, remove or reorder cities</button>
     <button id="shareBtn" type="button" hidden>📤 Share this page</button>
-    <button id="homeBtn" type="button">📲 Put it on your home screen</button>
+    <button id="homeBtn" type="button">📲 Save to home screen</button>
   </div>
   <details id="normals" class="panel">
     <summary><h2>📅 Typical weather by month</h2><br><span class="muted">Average high / low, 2015–2024. Handy for planning a visit.</span></summary>
@@ -216,13 +217,15 @@ footer a{color:var(--acc)}
 </div>
 
 <dialog id="howto" aria-labelledby="howtoT">
-  <h2 id="howtoT">📲 Put this page on your home screen</h2>
-  <p class="muted" style="margin-top:0">Then it opens like an app, with one tap.</p>
-  <div id="hIos"><h3>iPhone or iPad</h3><ol><li>Open this page in <b>Safari</b>.</li><li>Tap the <b>Share</b> button (a square with an arrow pointing up). On newer iPhones it is inside the <b>⋯</b> menu.</li><li>Tap <b>Add to Home Screen</b>, then <b>Add</b>.</li></ol></div>
+  <h2 id="howtoT">📲 Save Weather to your home screen</h2>
+  <p class="muted" style="margin-top:0">Then it opens like an app with one tap, and the weather is always up to date.</p>
+  <div id="hSave" hidden><button id="saveBtn" type="button" class="primary" style="width:100%">📲 Save to home screen</button>
+    <p class="muted" style="font-size:.92rem">Your phone will ask you to confirm. Tap <b>Install</b> (or <b>Add</b>).</p></div>
+  <div id="hIos"><h3>iPhone or iPad</h3><ol><li>Open this page in <b>Safari</b>.</li><li>Tap the <b>Share</b> button (a square with an arrow pointing up). On newer iPhones it is inside the <b>⋯</b> menu.</li><li>Tap <b>Add to Home Screen</b>, then <b>Add</b>.</li></ol><p class="muted" style="font-size:.92rem">After saving, open Weather from your home screen and set your cities and °C or °F there. iPhone keeps the saved app&rsquo;s settings separate from Safari.</p></div>
   <div id="hAnd"><h3>Android</h3><ol><li>Open this page in <b>Chrome</b>.</li><li>Tap the <b>⋮</b> menu at the top right.</li><li>Tap <b>Add to Home screen</b> (or <b>Install app</b>), then <b>Add</b>.</li></ol></div>
   <div id="hMac"><h3>Mac</h3><ol><li>In <b>Safari</b>: <b>File</b> menu → <b>Add to Dock</b>.</li><li>In <b>Chrome</b>: <b>⋮</b> menu → <b>Cast, save and share</b> → <b>Install page as app</b>.</li></ol></div>
-  <p class="muted">Opened it from WhatsApp? First tap <b>⋯</b> and choose <b>Open in Safari</b> or <b>Open in Chrome</b>.</p>
-  <form method="dialog"><button class="primary" style="width:100%">Got it</button></form>
+  <p id="hWa" class="muted">Opened it from WhatsApp? First tap <b>⋯</b> and choose <b>Open in Safari</b> or <b>Open in Chrome</b>.</p>
+  <form method="dialog"><button id="howtoClose" class="primary" style="width:100%">Got it</button></form>
 </dialog>
 <div id="toast" role="status" hidden></div>
 
@@ -233,6 +236,7 @@ const DEFAULTS=[
  {id:"austin",n:"Austin",a:"Texas",cc:"US",la:30.27,lo:-97.74,tz:"America/Chicago"},
  {id:"jersey",n:"Jersey City",a:"New Jersey",cc:"US",la:40.72,lo:-74.04,tz:"America/New_York"},
  {id:"conway",n:"Conway",a:"New Hampshire",cc:"US",la:43.98,lo:-71.12,tz:"America/New_York"},
+ {id:"sanfrancisco",n:"San Francisco",a:"California",cc:"US",la:37.77,lo:-122.42,tz:"America/Los_Angeles"},
  {id:"pune",n:"Pune",a:"Maharashtra",cc:"IN",la:18.52,lo:73.86,tz:"Asia/Kolkata"},
  {id:"delhi",n:"New Delhi",a:"",cc:"IN",la:28.61,lo:77.21,tz:"Asia/Kolkata"},
  {id:"prayagraj",n:"Prayagraj (Allahabad)",a:"Uttar Pradesh",cc:"IN",la:25.44,lo:81.85,tz:"Asia/Kolkata"},
@@ -242,10 +246,10 @@ const DEFAULTS=[
  {id:"chennai",n:"Chennai",a:"Tamil Nadu",cc:"IN",la:13.08,lo:80.27,tz:"Asia/Kolkata"}
 ];
 // Average daily high/low per calendar month, 2015-2024, from the Open-Meteo archive (°F)
-const NORMALS={"austin":{"months":[{"hi":60.9,"lo":41.9},{"hi":65.0,"lo":45.1},{"hi":73.4,"lo":53.8},{"hi":79.1,"lo":59.5},{"hi":85.1,"lo":67.5},{"hi":91.4,"lo":73.6},{"hi":95.4,"lo":76.6},{"hi":95.9,"lo":77.4},{"hi":89.9,"lo":72.5},{"hi":82.0,"lo":62.7},{"hi":70.2,"lo":52.4},{"hi":64.6,"lo":46.5}]},"jersey":{"months":[{"hi":40.0,"lo":25.8},{"hi":42.8,"lo":26.0},{"hi":49.6,"lo":32.3},{"hi":60.0,"lo":42.2},{"hi":70.1,"lo":52.8},{"hi":79.2,"lo":62.2},{"hi":85.2,"lo":69.2},{"hi":83.1,"lo":68.1},{"hi":76.7,"lo":61.6},{"hi":66.2,"lo":51.0},{"hi":54.2,"lo":38.9},{"hi":45.0,"lo":31.8}]},"conway":{"months":[{"hi":29.7,"lo":10.6},{"hi":31.7,"lo":10.8},{"hi":39.7,"lo":19.6},{"hi":51.6,"lo":31.6},{"hi":66.4,"lo":44.1},{"hi":74.5,"lo":53.3},{"hi":80.5,"lo":59.9},{"hi":78.2,"lo":58.7},{"hi":71.9,"lo":52.3},{"hi":58.4,"lo":41.4},{"hi":44.9,"lo":29.1},{"hi":34.7,"lo":18.4}]},"pune":{"months":[{"hi":83.9,"lo":59.2},{"hi":89.2,"lo":62.4},{"hi":94.0,"lo":67.3},{"hi":99.4,"lo":71.7},{"hi":97.6,"lo":73.3},{"hi":86.2,"lo":73.3},{"hi":79.8,"lo":72.1},{"hi":79.9,"lo":71.3},{"hi":81.8,"lo":70.4},{"hi":84.8,"lo":68.7},{"hi":85.2,"lo":64.3},{"hi":83.8,"lo":61.3}]},"delhi":{"months":[{"hi":66.5,"lo":46.3},{"hi":74.6,"lo":52.0},{"hi":84.6,"lo":60.6},{"hi":97.2,"lo":70.9},{"hi":102.0,"lo":77.5},{"hi":101.0,"lo":81.8},{"hi":92.6,"lo":80.0},{"hi":90.5,"lo":79.0},{"hi":90.6,"lo":76.4},{"hi":89.5,"lo":67.8},{"hi":80.7,"lo":58.5},{"hi":70.7,"lo":49.0}]},"prayagraj":{"months":[{"hi":70.6,"lo":50.5},{"hi":79.3,"lo":56.0},{"hi":89.7,"lo":64.3},{"hi":101.2,"lo":74.4},{"hi":103.7,"lo":80.1},{"hi":100.9,"lo":83.7},{"hi":91.3,"lo":80.5},{"hi":89.6,"lo":79.2},{"hi":89.6,"lo":78.3},{"hi":89.3,"lo":71.8},{"hi":83.2,"lo":62.2},{"hi":74.5,"lo":53.3}]},"telaviv":{"months":[{"hi":62.8,"lo":49.5},{"hi":64.6,"lo":49.7},{"hi":68.5,"lo":53.0},{"hi":74.2,"lo":57.2},{"hi":80.8,"lo":63.6},{"hi":84.4,"lo":69.3},{"hi":87.9,"lo":73.8},{"hi":88.9,"lo":75.4},{"hi":87.5,"lo":73.1},{"hi":83.1,"lo":67.7},{"hi":75.6,"lo":60.0},{"hi":67.4,"lo":53.1}]},"london":{"months":[{"hi":46.0,"lo":34.9},{"hi":48.6,"lo":36.6},{"hi":51.8,"lo":38.6},{"hi":56.9,"lo":40.5},{"hi":63.4,"lo":47.0},{"hi":69.5,"lo":53.0},{"hi":72.7,"lo":57.0},{"hi":72.2,"lo":56.6},{"hi":67.5,"lo":52.6},{"hi":60.0,"lo":47.7},{"hi":51.8,"lo":41.3},{"hi":48.7,"lo":39.5}]},"stockholm":{"months":[{"hi":33.9,"lo":25.6},{"hi":35.8,"lo":26.0},{"hi":41.4,"lo":28.5},{"hi":49.4,"lo":33.1},{"hi":60.3,"lo":42.4},{"hi":69.5,"lo":52.4},{"hi":71.3,"lo":55.9},{"hi":70.0,"lo":55.6},{"hi":62.0,"lo":49.6},{"hi":50.9,"lo":41.4},{"hi":41.7,"lo":34.3},{"hi":36.2,"lo":28.6}]},"chennai":{"months":[{"hi":82.4,"lo":71.4},{"hi":85.3,"lo":71.6},{"hi":89.2,"lo":75.3},{"hi":92.7,"lo":79.8},{"hi":95.1,"lo":82.0},{"hi":95.4,"lo":81.9},{"hi":93.0,"lo":80.1},{"hi":91.9,"lo":79.2},{"hi":90.3,"lo":78.7},{"hi":87.6,"lo":76.9},{"hi":83.5,"lo":75.0},{"hi":82.3,"lo":73.5}]}};
+const NORMALS={"austin":{"months":[{"hi":60.9,"lo":41.9},{"hi":65.0,"lo":45.1},{"hi":73.4,"lo":53.8},{"hi":79.1,"lo":59.5},{"hi":85.1,"lo":67.5},{"hi":91.4,"lo":73.6},{"hi":95.4,"lo":76.6},{"hi":95.9,"lo":77.4},{"hi":89.9,"lo":72.5},{"hi":82.0,"lo":62.7},{"hi":70.2,"lo":52.4},{"hi":64.6,"lo":46.5}]},"jersey":{"months":[{"hi":40.0,"lo":25.8},{"hi":42.8,"lo":26.0},{"hi":49.6,"lo":32.3},{"hi":60.0,"lo":42.2},{"hi":70.1,"lo":52.8},{"hi":79.2,"lo":62.2},{"hi":85.2,"lo":69.2},{"hi":83.1,"lo":68.1},{"hi":76.7,"lo":61.6},{"hi":66.2,"lo":51.0},{"hi":54.2,"lo":38.9},{"hi":45.0,"lo":31.8}]},"sanfrancisco":{"months":[{"hi":56.7,"lo":45.9},{"hi":58.8,"lo":46.3},{"hi":59.1,"lo":48.2},{"hi":60.9,"lo":49.9},{"hi":62.6,"lo":52.2},{"hi":66.6,"lo":54.8},{"hi":66.7,"lo":56.1},{"hi":68.1,"lo":57.6},{"hi":70.2,"lo":57.7},{"hi":69.2,"lo":55.1},{"hi":61.6,"lo":49.4},{"hi":56.3,"lo":45.9}]},"conway":{"months":[{"hi":29.7,"lo":10.6},{"hi":31.7,"lo":10.8},{"hi":39.7,"lo":19.6},{"hi":51.6,"lo":31.6},{"hi":66.4,"lo":44.1},{"hi":74.5,"lo":53.3},{"hi":80.5,"lo":59.9},{"hi":78.2,"lo":58.7},{"hi":71.9,"lo":52.3},{"hi":58.4,"lo":41.4},{"hi":44.9,"lo":29.1},{"hi":34.7,"lo":18.4}]},"pune":{"months":[{"hi":83.9,"lo":59.2},{"hi":89.2,"lo":62.4},{"hi":94.0,"lo":67.3},{"hi":99.4,"lo":71.7},{"hi":97.6,"lo":73.3},{"hi":86.2,"lo":73.3},{"hi":79.8,"lo":72.1},{"hi":79.9,"lo":71.3},{"hi":81.8,"lo":70.4},{"hi":84.8,"lo":68.7},{"hi":85.2,"lo":64.3},{"hi":83.8,"lo":61.3}]},"delhi":{"months":[{"hi":66.5,"lo":46.3},{"hi":74.6,"lo":52.0},{"hi":84.6,"lo":60.6},{"hi":97.2,"lo":70.9},{"hi":102.0,"lo":77.5},{"hi":101.0,"lo":81.8},{"hi":92.6,"lo":80.0},{"hi":90.5,"lo":79.0},{"hi":90.6,"lo":76.4},{"hi":89.5,"lo":67.8},{"hi":80.7,"lo":58.5},{"hi":70.7,"lo":49.0}]},"prayagraj":{"months":[{"hi":70.6,"lo":50.5},{"hi":79.3,"lo":56.0},{"hi":89.7,"lo":64.3},{"hi":101.2,"lo":74.4},{"hi":103.7,"lo":80.1},{"hi":100.9,"lo":83.7},{"hi":91.3,"lo":80.5},{"hi":89.6,"lo":79.2},{"hi":89.6,"lo":78.3},{"hi":89.3,"lo":71.8},{"hi":83.2,"lo":62.2},{"hi":74.5,"lo":53.3}]},"telaviv":{"months":[{"hi":62.8,"lo":49.5},{"hi":64.6,"lo":49.7},{"hi":68.5,"lo":53.0},{"hi":74.2,"lo":57.2},{"hi":80.8,"lo":63.6},{"hi":84.4,"lo":69.3},{"hi":87.9,"lo":73.8},{"hi":88.9,"lo":75.4},{"hi":87.5,"lo":73.1},{"hi":83.1,"lo":67.7},{"hi":75.6,"lo":60.0},{"hi":67.4,"lo":53.1}]},"london":{"months":[{"hi":46.0,"lo":34.9},{"hi":48.6,"lo":36.6},{"hi":51.8,"lo":38.6},{"hi":56.9,"lo":40.5},{"hi":63.4,"lo":47.0},{"hi":69.5,"lo":53.0},{"hi":72.7,"lo":57.0},{"hi":72.2,"lo":56.6},{"hi":67.5,"lo":52.6},{"hi":60.0,"lo":47.7},{"hi":51.8,"lo":41.3},{"hi":48.7,"lo":39.5}]},"stockholm":{"months":[{"hi":33.9,"lo":25.6},{"hi":35.8,"lo":26.0},{"hi":41.4,"lo":28.5},{"hi":49.4,"lo":33.1},{"hi":60.3,"lo":42.4},{"hi":69.5,"lo":52.4},{"hi":71.3,"lo":55.9},{"hi":70.0,"lo":55.6},{"hi":62.0,"lo":49.6},{"hi":50.9,"lo":41.4},{"hi":41.7,"lo":34.3},{"hi":36.2,"lo":28.6}]},"chennai":{"months":[{"hi":82.4,"lo":71.4},{"hi":85.3,"lo":71.6},{"hi":89.2,"lo":75.3},{"hi":92.7,"lo":79.8},{"hi":95.1,"lo":82.0},{"hi":95.4,"lo":81.9},{"hi":93.0,"lo":80.1},{"hi":91.9,"lo":79.2},{"hi":90.3,"lo":78.7},{"hi":87.6,"lo":76.9},{"hi":83.5,"lo":75.0},{"hi":82.3,"lo":73.5}]}};
 const MONTHS=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
 const MAX=20;
-const K_CITIES="fw-cities",K_UNIT="fw-unit",K_CACHE="fw-cache",K_ARCH="fw-arch",K_BIG="fw-big";   // the danpune.github.io origin is shared: keep the prefix
+const K_CITIES="fw-cities",K_UNIT="fw-unit",K_CACHE="fw-cache",K_ARCH="fw-arch",K_BIG="fw-big",K_ASKED="fw-asked-save";   // the danpune.github.io origin is shared: keep the prefix
 const FC="https://api.open-meteo.com/v1/forecast",AQ="https://air-quality-api.open-meteo.com/v1/air-quality",
       GEO="https://geocoding-api.open-meteo.com/v1/search",ARCH="https://archive-api.open-meteo.com/v1/archive";
 
@@ -668,7 +672,7 @@ function renderGlance(ready,at){
     const wet=ready.filter(function(x){return x.s.pp>=50}).map(nm),night=ready.filter(function(x){const h=parts(x.c.tz,x.s.date).h;return h>=23||h<5}).map(nm);
     if(wet.length)items.push("☔ Rain likely: "+wet.join(", "));
     if(night.length)items.push("😴 Middle of the night: "+night.join(", "));
-    g.innerHTML="<h2>"+esc(cap(whenLbl(at)))+", your time</h2><ul>"+items.map(function(s){return "<li>"+s+"</li>"}).join("")+"</ul>";
+    g.innerHTML="<h2>"+esc(cap(whenLbl(at)))+", your time</h2><p class=\"gwhen\">"+esc(F({weekday:"long",month:"long",day:"numeric"}).format(new Date(at*1000)))+"</p><ul>"+items.map(function(s){return "<li>"+s+"</li>"}).join("")+"</ul>";
     g.hidden=false;return;
   }
   const rainy=ready.filter(function(x){return rainSoon(x.d.f)>=50}).map(nm);
@@ -678,7 +682,7 @@ function renderGlance(ready,at){
   let ch=null;
   ready.forEach(function(x){const e=bigChange(x.d.f,4);if(e&&(!ch||Math.abs(e.delta)>Math.abs(ch.e.delta)))ch={x:x,e:e}});
   if(ch)items.push((ch.e.delta<0?"📉 ":"📈 ")+nm(ch.x)+" turned "+D(ch.e.delta)+(ch.e.delta<0?" cooler ":" warmer ")+relDay(ch.x.d.f,ch.e.j)+(ch.e.gust>=30?", with strong wind":""));
-  g.innerHTML="<h2>At a glance</h2><ul>"+items.map(function(s){return "<li>"+s+"</li>"}).join("")+"</ul>";
+  g.innerHTML="<h2>At a glance</h2><p class=\"gwhen\" data-now>"+esc(nowLine())+"</p><ul>"+items.map(function(s){return "<li>"+s+"</li>"}).join("")+"</ul>";
   g.hidden=false;
 }
 function renderTimebar(ready){
@@ -708,11 +712,13 @@ function statusLine(){
   if(w.textContent!==msg)w.textContent=msg;   // live region: only rewrite when it changes
   w.hidden=!msg;
 }
+function nowLine(){const d=new Date();return "Your time: "+F({weekday:"long",month:"long",day:"numeric"}).format(d)+", "+F({hour:"numeric",minute:"2-digit"}).format(d)}
 function tick(){
   if(nowHour()!==renderedHour&&!editing){render();return}   // new hour: hours strip, tips and the picked hour move on
   const now=new Date();
   document.querySelectorAll("[data-clock]").forEach(function(el){el.textContent=timeLine(el.getAttribute("data-clock"))});
   document.querySelectorAll("[data-part]").forEach(function(el){const fw=el.getAttribute("data-feel"),p=partOfDay(parts(el.getAttribute("data-part"),now).h);el.textContent=fw?fw+" "+p:cap(p)});
+  document.querySelectorAll("[data-now]").forEach(function(el){el.textContent=nowLine()});
   document.querySelectorAll("[data-ahead]").forEach(function(el){el.textContent=aheadTxt(el.getAttribute("data-ahead"))});
   statusLine();
 }
@@ -761,13 +767,43 @@ $("shareBtn").addEventListener("click",async function(){
   if(navigator.share){try{await navigator.share(data);return}catch(e){if(e&&e.name==="AbortError")return}}
   try{await navigator.clipboard.writeText(url);toast("Link copied. Paste it into WhatsApp or a message.")}catch(e){prompt("Copy this link:",url)}
 });
-$("homeBtn").hidden=standalone();
-$("homeBtn").addEventListener("click",function(){
-  const ua=navigator.userAgent||"",ios=/iPhone|iPad|iPod/.test(ua)||(/Macintosh/.test(ua)&&navigator.maxTouchPoints>1),and=/Android/.test(ua),mac=!ios&&/Macintosh/.test(ua);
-  $("hIos").hidden=and||mac;$("hAnd").hidden=ios||mac;$("hMac").hidden=ios||and;
-  const dlg=$("howto");if(dlg.showModal)dlg.showModal();else dlg.setAttribute("open","");
+// ---------- saving to the home screen ----------
+// Android Chrome hands us an install event, so one tap on our Save button brings up its own confirm.
+// iPhones have no such thing: only the person can add a page, from Safari's Share menu, so we show the steps.
+let installEvt=null;
+function device(){const ua=navigator.userAgent||"",ios=/iPhone|iPad|iPod/.test(ua)||(/Macintosh/.test(ua)&&navigator.maxTouchPoints>1),and=/Android/.test(ua);return {ios:ios,and:and,mac:!ios&&/Macintosh/.test(ua)}}
+function openSave(){
+  const d=device(),one=!!installEvt,dlg=$("howto");
+  $("hSave").hidden=!one;$("hWa").hidden=one;
+  $("hIos").hidden=one||d.and||d.mac;$("hAnd").hidden=one||d.ios||d.mac;$("hMac").hidden=one||d.ios||d.and;
+  $("howtoClose").textContent=one?"Not now":"Got it";$("howtoClose").classList.toggle("primary",!one);
+  if(!dlg.open){if(dlg.showModal)dlg.showModal();else dlg.setAttribute("open","")}
+}
+function closeSave(){const dlg=$("howto");if(dlg.open){if(dlg.close)dlg.close();else dlg.removeAttribute("open")}}
+// Ask once, on a phone or tablet, a few seconds after the page opens; never inside the saved app or the editor.
+const askAfter=Date.now()+4000;
+function maybeAsk(){
+  if(stored(K_ASKED)||standalone()||editing||document.visibilityState!=="visible"||$("howto").open)return;
+  const d=device();if(!d.ios&&!d.and)return;
+  store(K_ASKED,1);openSave();
+}
+window.addEventListener("beforeinstallprompt",function(e){
+  e.preventDefault();installEvt=e;   // our Save button replaces Chrome's small banner
+  setTimeout(maybeAsk,Math.max(0,askAfter-Date.now()));
 });
+window.addEventListener("appinstalled",function(){installEvt=null;store(K_ASKED,1);$("homeBtn").hidden=true;closeSave();toast("Saved! Look for Weather on your home screen.")});
+$("saveBtn").addEventListener("click",async function(){
+  const e=installEvt;if(!e)return;
+  installEvt=null;closeSave();   // an install event can only be used once
+  try{await e.prompt();const c=await e.userChoice;if(c&&c.outcome==="accepted")toast("Saved! Look for Weather on your home screen.")}catch(err){}
+});
+$("homeBtn").hidden=standalone();
+$("homeBtn").addEventListener("click",openSave);
 $("howto").addEventListener("submit",function(e){if(!this.showModal){e.preventDefault();this.removeAttribute("open")}});   // old Safari: no <dialog>, so the form would reload the page
+// iPhone: ask after a few seconds. Android: ask when Chrome says the page can be installed (above); if it never does
+// (WhatsApp's built-in browser, Firefox), show the steps after 35 s, which also covers Chrome's "used it a bit" rule.
+setTimeout(function(){if(device().ios)maybeAsk()},4000);
+setTimeout(function(){if(device().and&&!installEvt)maybeAsk()},35000);
 
 // ---------- editing the list ----------
 let found=[],qSeq=0,qTimer=0,drag=null;
