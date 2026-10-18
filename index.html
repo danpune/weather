@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#1a5f9e">
 <meta name="color-scheme" content="light">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src https://api.open-meteo.com https://air-quality-api.open-meteo.com https://geocoding-api.open-meteo.com https://archive-api.open-meteo.com; manifest-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'">
 <title>Family Weather — your cities side by side</title>
 <meta name="description" content="Weather for the whole family's cities on one page: right now, the next week, the last two weeks and the past year. Free, no ads, no sign-up.">
 <meta name="mobile-web-app-capable" content="yes">
@@ -78,7 +79,7 @@ button[aria-pressed="true"]{background:var(--acc);border-color:var(--acc);color:
 .trk{flex:1;position:relative;height:8px;border-radius:4px;background:rgba(255,255,255,.3);min-width:50px}
 .fill{position:absolute;top:0;bottom:0;border-radius:4px;min-width:8px}
 .dot{position:absolute;top:50%;width:14px;height:14px;margin:-7px 0 0 -7px;border-radius:50%;background:#fff;box-shadow:0 0 0 2px rgba(0,0,0,.45)}
-.tip{display:block;margin-top:9px;padding:7px 10px;border-radius:10px;background:rgba(255,255,255,.17);font-size:.95rem}
+.tip{display:block;margin-top:9px;padding:7px 10px;border-radius:10px;background:rgba(0,0,0,.18);box-shadow:inset 0 0 0 1px rgba(255,255,255,.14);font-size:.95rem}
 .more{display:block;margin-top:8px;text-align:right;font-size:.88rem;font-weight:650}
 .more .c,.card[open] .more .o{display:none}
 .card[open] .more .c{display:inline}
@@ -285,7 +286,7 @@ function savedList(){const s=stored(K_CITIES);if(!Array.isArray(s))return null;c
 function standalone(){return (window.matchMedia&&matchMedia("(display-mode: standalone)").matches)||navigator.standalone===true}
 function writeHash(){
   const h=toHash(cities),plain=h===toHash(DEFAULT_LIST);   // the untouched default list keeps a clean address
-  try{history.replaceState(null,"",plain?location.pathname+location.search:"#c="+h)}catch(e){}
+  try{history.replaceState(history.state,"",plain?location.pathname+location.search:"#c="+h)}catch(e){}
 }
 function save(){store(K_CITIES,cities);writeHash()}
 
@@ -314,7 +315,7 @@ function dateLbl(ds){return F({month:"short",day:"numeric",timeZone:"UTC"}).form
 function monthLbl(ym){return F({month:"long",year:"numeric",timeZone:"UTC"}).format(wall(ym+"-15"))}
 const pf={};
 function parts(tz,d){
-  const f=pf[tz]||(pf[tz]=new Intl.DateTimeFormat("en-US",{timeZone:tz,hourCycle:"h23",year:"numeric",month:"numeric",day:"numeric",hour:"numeric",minute:"numeric"}));
+  const f=pf[tz]||(pf[tz]=new Intl.DateTimeFormat("en-US",{timeZone:tz,hour12:false,year:"numeric",month:"numeric",day:"numeric",hour:"numeric",minute:"numeric"}));
   const p={};f.formatToParts(d).forEach(function(x){p[x.type]=x.value});
   return {y:+p.year,mo:+p.month,d:+p.day,h:(+p.hour)%24,mi:+p.minute};
 }
@@ -330,6 +331,7 @@ function partOfDay(h){return h<5?"night":h<12?"morning":h<17?"afternoon":h<21?"e
 function feel(f){return f<32?"Freezing":f<50?"Cold":f<62?"Cool":f<75?"Pleasant":f<86?"Warm":f<95?"Hot":"Very hot"}
 // WMO weather codes, grouped the way people talk about weather (same table as Time Zones)
 function wxLook(c,day){
+  if(!num(c))return ["","–"];   // a missing code is not fog (null <= 48 is true in JS)
   return c===0?[day?"☀️":"🌙","Clear"]:c===1?[day?"🌤️":"🌙","Mostly clear"]
     :c===2?[day?"⛅":"☁️","Partly cloudy"]:c===3?["☁️","Cloudy"]:c<=48?["🌫️","Fog"]
     :c<=57?["🌧️","Drizzle"]:c<=67||(c>=80&&c<=82)?["🌧️","Rain"]:c<=86?["🌨️","Snow"]:["⛈️","Thunderstorm"];
@@ -353,7 +355,7 @@ function ago(t){const m=Math.round((Date.now()-t)/6e4);return m<1?"just now":m<6
 
 // ---------- state ----------
 let cities=(standalone()?savedList()||fromHash(location.hash):fromHash(location.hash)||savedList())||DEFAULT_LIST.map(function(c){return Object.assign({},c)});
-let wx={},lastOK=0,busy=false,failed=false,histFailed=false,shift=0,renderedHour=0,editing=false,editStart="",big=stored(K_BIG)===1;
+let wx={},lastOK=0,busy=false,again=false,failed=false,histFailed=false,shift=0,renderedHour=0,editing=false,editStart="",big=stored(K_BIG)===1;
 let arch=stored(K_ARCH)||{};
 const archBusy={},openSet={},sel2={},selM={};
 
@@ -384,7 +386,7 @@ function hIdx(f,t){const H=f&&f.hr;if(!H||!H.time)return -1;const i=Math.round((
 // Every city in one batched request (20 separate ones got rate-limited): forecast first so the cards
 // appear quickly, the last two weeks and air quality alongside.
 async function refresh(){
-  if(busy)return;
+  if(busy){again=true;return}
   busy=true;statusLine();$("refreshBtn").disabled=true;
   const list=cities.slice(),
     ll="?latitude="+list.map(function(c){return c.la}).join(",")+"&longitude="+list.map(function(c){return c.lo}).join(","),
@@ -407,6 +409,7 @@ async function refresh(){
     lastOK=Date.now();failed=false;
   }else failed=true;
   busy=false;$("refreshBtn").disabled=false;render();statusLine();
+  if(again){again=false;refresh()}
   const ha=await hP,aa=await aP;
   histFailed=!ha;
   list.forEach(function(c,i){
@@ -473,7 +476,7 @@ function tip(f,aq){
   if(cur.wind_gusts_10m>=30)return "🌬️ Very windy right now";
   if(fl<32)return "🧣 Freezing, wrap up warm";
   if(fl<50)return "🧥 Jacket weather";
-  if(cur.is_day===1&&fl>=62&&fl<=82&&pp<20&&cur.weather_code<=2)return "😊 Lovely weather to be outside";
+  if(cur.is_day===1&&fl>=62&&fl<=82&&pp<20&&num(cur.weather_code)&&cur.weather_code<=2)return "😊 Lovely weather to be outside";
   return "";
 }
 // The same idea for a picked hour: is anyone asleep, and what is it like at that hour?
@@ -511,8 +514,8 @@ function changeText(f,e){
   if(e.kind==="rain")return "Wettest day: "+relDay(f,e.j)+", with "+P(e.rain)+" of rain.";
   const down=e.delta<0;
   let s="<b>Big change "+relDay(f,e.j)+"</b>: the high was "+D(e.delta)+(down?" lower":" higher")+" than the day before";
-  if(e.gust>=30)s+=", with strong wind (gusts up to "+W(e.gust)+")";
-  if(e.rain>=0.2)s+=(e.gust>=30?" and ":", with ")+P(e.rain)+" of rain";
+  if(e.gust>=25)s+=", with "+(e.gust>=30?"strong":"gusty")+" wind (gusts up to "+W(e.gust)+")";   // same 25 mph line as the cold-front sentence below
+  if(e.rain>=0.2)s+=(e.gust>=25?" and ":", with ")+P(e.rain)+" of rain";
   return s+". "+(down&&e.gust>=25?"A sudden drop with wind like this is the classic sign of a cold front passing through.":down?"Cooler air moved in.":"Warmer air moved in.");
 }
 
@@ -523,18 +526,18 @@ function card(c,ci,ctx){
     +(live?'<span class="tm" data-clock="'+tzA+'">'+esc(timeLine(c.tz))+'</span>':'<span class="tm">🕐 '+esc(timeLine(c.tz,s.date))+'</span>')
     +'<span class="ah" data-ahead="'+tzA+'">'+esc(aheadTxt(c.tz))+'</span></span>';
   if(!f)return '<details class="card s-none" data-k="'+esc(k)+'"><summary>'+head+'<span class="now"><span class="tp">…</span></span></span>'
-    +'<span class="feel">'+(failed||lastOK?"Weather not available right now":"Loading weather…")+'</span></summary></details>';
+    +'<span class="feel">'+(!busy&&!again&&(failed||lastOK)?"Weather not available right now":"Loading weather…")+'</span></summary></details>';
   const dl=f.daily,j=dIdx(f,s),look=wxLook(s.code,s.day),fl=num(s.app)?s.app:s.temp,h=parts(c.tz,s.date).h,fw=num(fl)?feel(fl):"";
   let cmp="";
   const hs=ctx.snaps[key(ctx.home)];
-  if(ci===0)cmp=' · <span class="home" style="background:rgba(255,255,255,.22);color:#fff">🏠 Home</span>';
+  if(ci===0)cmp=' · <span class="home" style="background:rgba(0,0,0,.22);color:#fff">🏠 Home</span>';
   else if(hs&&num(hs.temp)&&num(s.temp)){const dd=s.temp-hs.temp;cmp=" · "+(Math.abs(dd)<2?"about the same as ":D(dd)+(dd>0?" warmer":" colder")+" than ")+esc(ctx.home.n)}
   const lo=dl.temperature_2m_min[j],hi=dl.temperature_2m_max[j],span=(ctx.hi-ctx.lo)||1,
     L=(lo-ctx.lo)/span*100,R=(hi-ctx.lo)/span*100,N=Math.min(100,Math.max(0,(s.temp-ctx.lo)/span*100)),t=live?tip(f,d.aq):tipAt(s,h);
   return '<details class="card s-'+sky(f,s)+'" data-k="'+esc(k)+'"'+open+'><summary>'+head
     +'<span class="now"><span class="tp">'+T(s.temp)+'</span><span class="cd">'+look[0]+' '+look[1]+'</span>'
     +(num(s.app)&&num(s.temp)&&Math.abs(s.app-s.temp)>=5?'<span class="cd">Feels like '+T(s.app)+'</span>':'')+'</span></span>'
-    +'<span class="feel">'+(live?'<span data-part="'+tzA+'" data-feel="'+fw+'">':'<span>')+(fw?fw+' '+partOfDay(h):partOfDay(h))+'</span>'+cmp+'</span>'
+    +'<span class="feel">'+(live?'<span data-part="'+tzA+'" data-feel="'+fw+'">':'<span>')+(fw?fw+' '+partOfDay(h):cap(partOfDay(h)))+'</span>'+cmp+'</span>'
     +'<span class="rg"><span>Low <b>'+T(lo)+'</b></span><span class="trk" aria-hidden="true"><span class="fill" style="left:'+L.toFixed(1)+'%;width:'+Math.max(0,R-L).toFixed(1)+'%;background:linear-gradient(90deg,'+tcol(lo)+','+tcol(hi)+')"></span><span class="dot" style="left:'+N.toFixed(1)+'%"></span></span><span>High <b>'+T(hi)+'</b></span></span>'
     +(t?'<span class="tip">'+t+'</span>':'')
     +'<span class="more"><span class="o">Tap for details ▾</span><span class="c">Close ▴</span></span></summary>'
@@ -552,7 +555,7 @@ function body(c,ci,f,d,k){
     s+='<div class="wide"><span>Usual for '+F({month:"long",timeZone:"UTC"}).format(wall(dl.time[i]))+'</span>High '+T(n.hi)+' / low '+T(n.lo)
       +' · <b>'+(Math.abs(dd)<5?"today is about usual":dd>0?"today is warmer than usual":"today is cooler than usual")+'</b></div>'}
   s+='</div><h3>Next 24 hours</h3><div class="hours">';
-  if(i0<0)s+='<p class="muted">Loading…</p>';
+  if(i0<0)s+='<p class="muted">'+(busy?"Loading…":"Not available right now.")+'</p>';
   else for(let j=0;j<25&&i0+j<H.time.length;j++){
     const x=i0+j,lk=j?wxLook(H.weather_code[x],H.is_day[x]===1):wxLook(cur.weather_code,cur.is_day===1),pp=H.precipitation_probability[x];
     s+='<div class="hr"><span>'+(j?esc(hourAt(c.tz,new Date(H.time[x]*1000))):"Now")+'</span><span title="'+lk[1]+'">'+lk[0]+'</span><b>'+T(j?H.temperature_2m[x]:cur.temperature_2m)+'</b><span class="pp">'+(pp>=20?"💧"+pp+"%":"")+'</span></div>';
@@ -586,7 +589,7 @@ function twoWeeks(f,ci,k,e){
   let y0=Math.floor(Math.min.apply(null,vals)/step)*step,y1=Math.ceil(Math.max.apply(null,vals)/step)*step;if(y1-y0<2*step)y1=y0+2*step;
   const Wd=340,Ht=196,pl=34,pr=4,pt=24,pb=34,pw=Wd-pl-pr,ph=Ht-pt-pb,sl=pw/n,Y=function(v){return pt+ph*(1-(v-y0)/(y1-y0))};
   let defs="",grid="",bars="",lab="",hits="";
-  for(let v=y0;v<=y1;v+=step)grid+='<line x1="'+pl+'" x2="'+(Wd-pr)+'" y1="'+Y(v).toFixed(1)+'" y2="'+Y(v).toFixed(1)+'" stroke="#e3e9f0"/><text x="'+(pl-5)+'" y="'+(Y(v)+4).toFixed(1)+'" text-anchor="end" font-size="11" fill="#5b6878">'+v+'°</text>';
+  for(let v=y0;v<=y1;v+=step)grid+='<line x1="'+pl+'" x2="'+(Wd-pr)+'" y1="'+Y(v).toFixed(1)+'" y2="'+Y(v).toFixed(1)+'" stroke="#e3e9f0"/><text x="'+(pl-5)+'" y="'+(Y(v)+4).toFixed(1)+'" text-anchor="end" font-size="12" fill="#5b6878">'+v+'°</text>';
   const sel=sel2[k]>=from&&sel2[k]<=i?sel2[k]:e?e.j:i;
   for(let q=0;q<n;q++){
     const j=from+q,x=pl+sl*q,cx=x+sl/2,ds=dl.time[j],w=j===i?' font-weight="700" fill="#132033"':' fill="#5b6878"';
@@ -594,10 +597,10 @@ function twoWeeks(f,ci,k,e){
       const id="g"+ci+"_"+q,yt=Y(hi[q]),yb=Y(lo[q]),mk=(dl.wind_gusts_10m_max[j]>=30?"💨":"")+(dl.precipitation_sum[j]>=0.1?"💧":"");
       defs+='<linearGradient id="'+id+'" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="'+tcol(dl.temperature_2m_min[j])+'"/><stop offset="1" stop-color="'+tcol(dl.temperature_2m_max[j])+'"/></linearGradient>';
       bars+='<rect x="'+(cx-5).toFixed(1)+'" y="'+yt.toFixed(1)+'" width="10" height="'+Math.max(4,yb-yt).toFixed(1)+'" rx="5" fill="url(#'+id+')"/>';
-      if(mk)bars+='<text x="'+cx.toFixed(1)+'" y="'+(yt-5).toFixed(1)+'" text-anchor="middle" font-size="10">'+mk+'</text>';
+      if(mk)bars+='<text x="'+cx.toFixed(1)+'" y="'+(yt-5).toFixed(1)+'" text-anchor="middle" font-size="11">'+mk+'</text>';
     }
-    lab+='<text x="'+cx.toFixed(1)+'" y="'+(Ht-19)+'" text-anchor="middle" font-size="10.5"'+w+'>'+esc(dayLbl(ds,"short").slice(0,2))+'</text>'
-      +'<text x="'+cx.toFixed(1)+'" y="'+(Ht-5)+'" text-anchor="middle" font-size="10.5"'+w+'>'+(+ds.slice(8,10))+'</text>';
+    lab+='<text x="'+cx.toFixed(1)+'" y="'+(Ht-19)+'" text-anchor="middle" font-size="12"'+w+'>'+esc(dayLbl(ds,"short").slice(0,2))+'</text>'
+      +'<text x="'+cx.toFixed(1)+'" y="'+(Ht-5)+'" text-anchor="middle" font-size="12"'+w+'>'+(+ds.slice(8,10))+'</text>';
     hits+='<rect class="hit" data-d="'+j+'" x="'+x.toFixed(1)+'" y="0" width="'+sl.toFixed(1)+'" height="'+Ht+'" fill="transparent"/>';
   }
   return '<div class="chart"><svg viewBox="0 0 '+Wd+' '+Ht+'" role="img" aria-label="Daily high and low temperatures for the last two weeks. Tap a day for details.">'
@@ -617,17 +620,17 @@ function yearBlock(c,ci,k){
   const fac=unit==="F"?1:5/9,warm=rows.filter(function(r){return r.an>=2}).length,cool=rows.filter(function(r){return r.an<=-2}).length;
   let bq=0;rows.forEach(function(r,q){if(Math.abs(r.an)>Math.abs(rows[bq].an))bq=q});
   const lim=Math.max(2,Math.ceil(Math.max.apply(null,rows.map(function(r){return Math.abs(r.an*fac)}))/2)*2),
-    Wd=340,Ht=170,pl=34,pr=4,pt=12,pb=26,ph=Ht-pt-pb,sl=(Wd-pl-pr)/rows.length,Y=function(v){return pt+ph*(1-(v+lim)/(2*lim))},y0=Y(0);
+    Wd=340,Ht=170,pl=40,pr=4,pt=12,pb=26,ph=Ht-pt-pb,sl=(Wd-pl-pr)/rows.length,Y=function(v){return pt+ph*(1-(v+lim)/(2*lim))},y0=Y(0);
   const sel=selM[k]!=null&&selM[k]<rows.length?selM[k]:bq;
   let g='<line x1="'+pl+'" x2="'+(Wd-pr)+'" y1="'+y0.toFixed(1)+'" y2="'+y0.toFixed(1)+'" stroke="#9aa6b5"/>'
-    +'<text x="'+(pl-5)+'" y="'+(y0+4).toFixed(1)+'" text-anchor="end" font-size="10.5" fill="#5b6878">usual</text>'
-    +'<text x="'+(pl-5)+'" y="'+(Y(lim)+8).toFixed(1)+'" text-anchor="end" font-size="10.5" fill="#5b6878">+'+lim+'°</text>'
-    +'<text x="'+(pl-5)+'" y="'+(Y(-lim)).toFixed(1)+'" text-anchor="end" font-size="10.5" fill="#5b6878">−'+lim+'°</text>';
+    +'<text x="'+(pl-5)+'" y="'+(y0+4).toFixed(1)+'" text-anchor="end" font-size="12" fill="#5b6878">usual</text>'
+    +'<text x="'+(pl-5)+'" y="'+(Y(lim)+8).toFixed(1)+'" text-anchor="end" font-size="12" fill="#5b6878">+'+lim+'°</text>'
+    +'<text x="'+(pl-5)+'" y="'+(Y(-lim)).toFixed(1)+'" text-anchor="end" font-size="12" fill="#5b6878">−'+lim+'°</text>';
   let bars="",lab="",hits="";
   rows.forEach(function(r,q){
     const x=pl+sl*q,cx=x+sl/2,v=r.an*fac,yv=Y(v),top=Math.min(yv,y0),h=Math.max(1.5,Math.abs(yv-y0));
     bars+='<rect x="'+(cx-sl*.3).toFixed(1)+'" y="'+top.toFixed(1)+'" width="'+(sl*.6).toFixed(1)+'" height="'+h.toFixed(1)+'" rx="3" fill="'+(v>=0?"#d9480f":"#1c6dc2")+'"/>';
-    lab+='<text x="'+cx.toFixed(1)+'" y="'+(Ht-8)+'" text-anchor="middle" font-size="10" fill="#5b6878">'+MONTHS[r.mo]+'</text>';
+    lab+='<text x="'+cx.toFixed(1)+'" y="'+(Ht-8)+'" text-anchor="middle" font-size="11.5" fill="#5b6878">'+MONTHS[r.mo]+'</text>';
     hits+='<rect class="hit" data-m="'+q+'" x="'+x.toFixed(1)+'" y="0" width="'+sl.toFixed(1)+'" height="'+Ht+'" fill="transparent"/>';
   });
   const b=rows[bq],who=esc(c.l||c.n);
@@ -706,10 +709,10 @@ function statusLine(){
   w.hidden=!msg;
 }
 function tick(){
-  if(shift&&nowHour()!==renderedHour){render();return}   // the picked hour is "N hours from now"
+  if(nowHour()!==renderedHour&&!editing){render();return}   // new hour: hours strip, tips and the picked hour move on
   const now=new Date();
   document.querySelectorAll("[data-clock]").forEach(function(el){el.textContent=timeLine(el.getAttribute("data-clock"))});
-  document.querySelectorAll("[data-part]").forEach(function(el){el.textContent=el.getAttribute("data-feel")+" "+partOfDay(parts(el.getAttribute("data-part"),now).h)});
+  document.querySelectorAll("[data-part]").forEach(function(el){const fw=el.getAttribute("data-feel"),p=partOfDay(parts(el.getAttribute("data-part"),now).h);el.textContent=fw?fw+" "+p:cap(p)});
   document.querySelectorAll("[data-ahead]").forEach(function(el){el.textContent=aheadTxt(el.getAttribute("data-ahead"))});
   statusLine();
 }
@@ -768,8 +771,8 @@ $("howto").addEventListener("submit",function(e){if(!this.showModal){e.preventDe
 
 // ---------- editing the list ----------
 let found=[],qSeq=0,qTimer=0,drag=null;
-function openEditor(){editing=true;editStart=toHash(cities);$("main").hidden=true;$("editor").hidden=false;$("q").value="";$("results").innerHTML="";$("emsg").textContent="";renderEditor();window.scrollTo(0,0)}
-function closeEditor(){editing=false;$("editor").hidden=true;$("main").hidden=false;save();render();if(toHash(cities)!==editStart)refresh()}
+function openEditor(){try{history.pushState({fwEditor:1},"",location.href)}catch(e){}editing=true;editStart=toHash(cities);$("main").hidden=true;$("editor").hidden=false;$("q").value="";$("results").innerHTML="";$("emsg").textContent="";renderEditor();window.scrollTo(0,0)}
+function closeEditor(){editing=false;$("editor").hidden=true;$("main").hidden=false;save();if(toHash(cities)!==editStart)refresh();render()}
 function renderEditor(){
   $("elist").innerHTML=cities.map(function(c,i){
     const nm=esc(c.n),sub=esc(c.l?c.n+(where(c)?", "+where(c):""):where(c));
@@ -781,7 +784,8 @@ function renderEditor(){
   }).join("");
 }
 $("editBtn").addEventListener("click",openEditor);
-$("doneBtn").addEventListener("click",closeEditor);
+$("doneBtn").addEventListener("click",function(){if(history.state&&history.state.fwEditor)history.back();else closeEditor()});   // back() fires popstate -> closeEditor
+window.addEventListener("popstate",function(){if(editing)closeEditor()});
 $("resetBtn").addEventListener("click",function(){
   if(!confirm("Go back to the original "+DEFAULT_LIST.length+" cities? Your changes and nicknames will be removed."))return;
   cities=DEFAULT_LIST.map(function(c){return Object.assign({},c)});save();renderEditor();$("emsg").textContent="Back to the original cities.";
@@ -806,6 +810,7 @@ function dragMove(y){
   if(!drag)return;
   if(!drag.moved&&Math.abs(y-drag.y)<6)return;
   if(!drag.moved){drag.moved=true;drag.el.classList.add("dragging")}
+  if(y<70)window.scrollBy(0,-16);else if(y>innerHeight-70)window.scrollBy(0,16);   // touchmove stops page scroll, so scroll for them
   const rows=Array.from($("elist").children);
   let to=rows.findIndex(function(r){const b=r.getBoundingClientRect();return y<b.top+b.height/2});if(to<0)to=rows.length-1;
   if(to!==drag.i){cities.splice(to,0,cities.splice(drag.i,1)[0]);$("elist").insertBefore(drag.el,to>drag.i?rows[to].nextSibling:rows[to]);drag.i=to}
@@ -865,6 +870,7 @@ function selftest(){
   ok(hIdx(fh,t0+7200)===2&&hIdx(fh,t0+10800)===-1&&hIdx(fh,t0-3600)===-1,"hour lookup on the shared timeline");
   ok(isoIn("Asia/Kolkata",new Date(Date.UTC(2026,9,18,15,0)))==="2026-10-18T20:30"&&isoIn("Europe/London",new Date(Date.UTC(2026,9,25,12,0)))==="2026-10-25T12:00","local time at a picked hour, incl. after a clock change");
   ok(tipAt({temp:60,code:0},2)==="😴 Middle of the night there"&&tipAt({temp:70,code:0,pp:60},14)==="☂️ 60% chance of rain","tips for a picked hour");
+  ok(wxLook(null,true)[1]!=="Fog"&&wxLook(45,true)[1]==="Fog","a missing weather code is not fog");
   ok(tcol(-40)==="rgb(124,108,240)"&&tcol(140)==="rgb(239,90,74)"&&tcol(32)==="rgb(79,143,247)","temperature colours");
   return bad;
 }
