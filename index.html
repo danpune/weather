@@ -138,6 +138,16 @@ th:first-child,td:first-child{text-align:left;position:sticky;left:0;background:
 th.hl,td.hl{background:#fff4cc}
 dialog{border:0;border-radius:18px;padding:20px;max-width:520px;width:calc(100% - 28px);color:var(--ink)}
 dialog::backdrop{background:rgba(15,23,42,.55)}
+dialog.sheet{margin:auto auto 0;width:100%;max-width:560px;border-radius:20px 20px 0 0;padding-bottom:calc(14px + env(safe-area-inset-bottom))}
+.big-btn{display:block;width:100%;text-align:center;font-size:1.15rem;font-weight:700;padding:14px 16px;border-radius:999px;text-decoration:none;border:1px solid var(--acc)}
+.small{font-size:.92rem}
+.steps{list-style:none;margin:6px 0 10px;padding:0}
+.steps li{display:flex;align-items:center;gap:12px;margin:10px 0;font-size:1.08rem}
+.steps .ic{flex:none;width:44px;height:44px;border-radius:12px;background:var(--soft);display:flex;align-items:center;justify-content:center;font-size:1.3rem}
+#hArrow{text-align:center;color:var(--acc);font-weight:700;margin-top:6px}
+#hArrow span{display:block;font-size:2.2rem;line-height:1;animation:bob 1.1s ease-in-out infinite}
+@keyframes bob{50%{transform:translateY(7px)}}
+@media (prefers-reduced-motion:reduce){#hArrow span{animation:none}}
 dialog h2{margin:0 0 6px;font-size:1.25rem}
 dialog h3{margin:14px 0 4px;font-size:1.05rem}
 dialog ol{margin:4px 0;padding-left:22px}
@@ -173,6 +183,7 @@ footer a{color:var(--acc)}
     <span class="seg" role="group" aria-label="Temperature unit"><button id="uF" type="button">°F</button><button id="uC" type="button">°C</button></span>
     <button id="bigBtn" type="button">Aa Bigger text</button>
     <button id="refreshBtn" type="button">↻ Refresh</button>
+    <button id="timeBtn" type="button" hidden>🕐 See other times</button>
   </div>
   <p id="updated">Loading the weather…</p>
 </header>
@@ -182,7 +193,7 @@ footer a{color:var(--acc)}
   <section id="glance" class="panel" hidden></section>
   <div id="list"></div>
   <div id="timebar" class="timebar" hidden>
-    <div class="tb-top"><span id="tbLabel"></span><button id="tbNow" type="button" class="primary" hidden>Back to now</button></div>
+    <div class="tb-top"><span id="tbLabel"></span><button id="tbNow" type="button" class="primary">Close</button></div>
     <div class="tb-row"><button id="tbBack" type="button" aria-label="One hour earlier">◀</button>
       <div class="tb-slide"><input id="tbRange" type="range" min="-24" max="48" step="1" value="0" aria-label="Time to show">
         <div class="tb-ticks" aria-hidden="true"><span style="left:0">Yesterday</span><span style="left:calc(16px + (100% - 32px) / 3 - .4em)">▲ Now</span><span style="right:0">In 2 days</span></div></div>
@@ -217,15 +228,23 @@ footer a{color:var(--acc)}
 </div>
 
 <dialog id="howto" aria-labelledby="howtoT">
-  <h2 id="howtoT">📲 Save Weather to your home screen</h2>
-  <p class="muted" style="margin-top:0">Then it opens like an app with one tap, and the weather is always up to date.</p>
-  <div id="hSave" hidden><button id="saveBtn" type="button" class="primary" style="width:100%">📲 Save to home screen</button>
-    <p class="muted" style="font-size:.92rem">Your phone will ask you to confirm. Tap <b>Install</b> (or <b>Add</b>).</p></div>
-  <div id="hIos"><h3>iPhone or iPad</h3><ol><li>Open this page in <b>Safari</b>.</li><li>Tap the <b>Share</b> button (a square with an arrow pointing up). On newer iPhones it is inside the <b>⋯</b> menu.</li><li>Tap <b>Add to Home Screen</b>, then <b>Add</b>.</li></ol><p class="muted" style="font-size:.92rem">After saving, open Weather from your home screen and set your cities and °C or °F there. iPhone keeps the saved app&rsquo;s settings separate from Safari.</p></div>
-  <div id="hAnd"><h3>Android</h3><ol><li>Open this page in <b>Chrome</b>.</li><li>Tap the <b>⋮</b> menu at the top right.</li><li>Tap <b>Add to Home screen</b> (or <b>Install app</b>), then <b>Add</b>.</li></ol></div>
+  <h2 id="howtoT">📲 Save Weather to your phone?</h2>
+  <p class="muted" style="margin-top:0">Next time, just tap the Weather icon on your home screen.</p>
+  <div id="hSave" hidden><button id="saveBtn" type="button" class="primary big-btn">✅ Yes, save it</button>
+    <p class="muted small">Your phone asks once more: tap <b>Install</b>.</p></div>
+  <div id="hChrome" hidden><a id="chromeBtn" class="primary big-btn" href="#">Open in Chrome to save it</a>
+    <p class="muted small">Then tap <b>Yes, save it</b>.</p></div>
+  <div id="hIos"><ol class="steps">
+      <li><span class="ic"><svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="#1a5f9e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 9H6.5A2.5 2.5 0 0 0 4 11.5v7A2.5 2.5 0 0 0 6.5 21h11a2.5 2.5 0 0 0 2.5-2.5v-7A2.5 2.5 0 0 0 17.5 9H16"/><path d="M12 3v11"/><path d="M8.5 6.5 12 3l3.5 3.5"/></svg></span><span>Tap <b>Share</b> <span id="iosWhere">at the bottom of the screen</span>.<br><small class="muted">On newer iPhones, tap <b>⋯</b> first.</small></span></li>
+      <li><span class="ic"><svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="#1a5f9e" stroke-width="2" stroke-linecap="round" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="4"/><path d="M12 8.5v7M8.5 12h7"/></svg></span><span>Tap <b>Add to Home Screen</b>.</span></li>
+      <li><span class="ic">✔️</span><span>Tap <b>Add</b>. Done!</span></li></ol>
+    <a id="safariBtn" class="primary big-btn" href="#" hidden>Open in Safari first</a>
+    <p id="iosNote" class="muted small">After saving, set your cities and °C or °F again in the saved app. iPhone keeps them separate from Safari.</p></div>
+  <div id="hAnd"><h3>Android</h3><ol><li id="andStep1">Open this page in <b>Chrome</b>.</li><li>Tap the <b>⋮</b> menu at the top right.</li><li>Tap <b>Add to Home screen</b> (or <b>Install app</b>), then <b>Add</b>.</li></ol></div>
   <div id="hMac"><h3>Mac</h3><ol><li>In <b>Safari</b>: <b>File</b> menu → <b>Add to Dock</b>.</li><li>In <b>Chrome</b>: <b>⋮</b> menu → <b>Cast, save and share</b> → <b>Install page as app</b>.</li></ol></div>
-  <p id="hWa" class="muted">Opened it from WhatsApp? First tap <b>⋯</b> and choose <b>Open in Safari</b> or <b>Open in Chrome</b>.</p>
-  <form method="dialog"><button id="howtoClose" class="primary" style="width:100%">Got it</button></form>
+  <p id="hWa" class="muted small">Opened it from WhatsApp? First tap <b>⋯</b> and choose <b>Open in Safari</b> or <b>Open in Chrome</b>.</p>
+  <form method="dialog"><button id="howtoClose" style="width:100%">Not now</button></form>
+  <div id="hArrow" aria-hidden="true" hidden><span>⬇</span>The Share button is down here</div>
 </dialog>
 <div id="toast" role="status" hidden></div>
 
@@ -295,7 +314,8 @@ function writeHash(){
 function save(){store(K_CITIES,cities);writeHash()}
 
 // ---------- units & formatting ----------
-let unit=stored(K_UNIT)||(/-(US|LR|MM|BS|BZ|KY|PW|FM|MH)\b/i.test(navigator.language||"")?"F":"C");
+const UNIT0=/-(US|LR|MM|BS|BZ|KY|PW|FM|MH)\b/i.test(navigator.language||"")?"F":"C";   // the phone's own default
+let unit=stored(K_UNIT)||UNIT0;
 function TN(f){return unit==="F"?f:(f-32)*5/9}
 function T(f){return num(f)?Math.round(TN(f))+"°":"–"}
 function D(d){return Math.round(Math.abs(unit==="F"?d:d*5/9))+"°"}
@@ -345,6 +365,7 @@ function region(cc){
   if(cc==="US")return "USA";if(cc==="GB")return "UK";
   try{return new Intl.DisplayNames(["en"],{type:"region"}).of(cc)||cc}catch(e){return cc}
 }
+function flag(cc){return /^[A-Z]{2}$/.test(cc||"")?String.fromCodePoint(0x1F1E6+cc.charCodeAt(0)-65,0x1F1E6+cc.charCodeAt(1)-65)+" ":""}   // "US" -> 🇺🇸
 function where(c){return [c.a,c.cc&&region(c.cc)].filter(Boolean).join(", ")}
 // Temperature colours (°F stops): purple-blue cold through green to orange-red hot
 const TSTOPS=[[10,[124,108,240]],[32,[79,143,247]],[50,[56,197,214]],[64,[95,211,138]],[75,[245,209,66]],[86,[245,154,60]],[100,[239,90,74]]];
@@ -359,7 +380,7 @@ function ago(t){const m=Math.round((Date.now()-t)/6e4);return m<1?"just now":m<6
 
 // ---------- state ----------
 let cities=(standalone()?savedList()||fromHash(location.hash):fromHash(location.hash)||savedList())||DEFAULT_LIST.map(function(c){return Object.assign({},c)});
-let wx={},lastOK=0,busy=false,again=false,failed=false,histFailed=false,shift=0,renderedHour=0,editing=false,editStart="",big=stored(K_BIG)===1;
+let wx={},lastOK=0,busy=false,again=false,tbOpen=false,failed=false,histFailed=false,shift=0,renderedHour=0,editing=false,editStart="",big=stored(K_BIG)===1;
 let arch=stored(K_ARCH)||{};
 const archBusy={},openSet={},sel2={},selM={};
 
@@ -526,7 +547,7 @@ function changeText(f,e){
 // ---------- drawing ----------
 function card(c,ci,ctx){
   const k=key(c),d=wx[k],f=d&&d.f,s=f&&ctx.snaps[k],live=!s||s.live,open=openSet[k]?" open":"",tzA=esc(c.tz);
-  const head='<span class="top"><span class="who"><span class="nm">'+esc(c.l||c.n)+(c.l?' <small>'+esc(c.n)+'</small>':'')+'</span>'
+  const head='<span class="top"><span class="who"><span class="nm">'+flag(c.cc)+esc(c.l||c.n)+(c.l?' <small>'+esc(c.n)+'</small>':'')+'</span>'
     +(live?'<span class="tm" data-clock="'+tzA+'">'+esc(timeLine(c.tz))+'</span>':'<span class="tm">🕐 '+esc(timeLine(c.tz,s.date))+'</span>')
     +'<span class="ah" data-ahead="'+tzA+'">'+esc(aheadTxt(c.tz))+'</span></span>';
   if(!f)return '<details class="card s-none" data-k="'+esc(k)+'"><summary>'+head+'<span class="now"><span class="tp">…</span></span></span>'
@@ -687,11 +708,13 @@ function renderGlance(ready,at){
 }
 function renderTimebar(ready){
   const bar=$("timebar"),r=$("tbRange");
-  bar.hidden=!ready.some(function(x){return x.d.f.hr});if(bar.hidden)return;
+  const has=ready.some(function(x){return x.d.f.hr});
+  $("timeBtn").hidden=!has||tbOpen;
+  bar.hidden=!has||!tbOpen;if(bar.hidden)return;
   const rel=Math.abs(shift)<24?" · "+(shift>0?"in "+shift+(shift===1?" hour":" hours"):-shift+(shift===-1?" hour ago":" hours ago")):"",
     lbl=shift?"🕐 <b>"+esc(cap(whenLbl(nowHour()+shift*3600)))+"</b><br><small>your time"+rel+"</small>":"<b>Now.</b> Slide to see other times";
   if($("tbLabel").innerHTML!==lbl)$("tbLabel").innerHTML=lbl;
-  bar.classList.toggle("away",!!shift);$("tbNow").hidden=!shift;
+  bar.classList.toggle("away",!!shift);$("tbNow").textContent=shift?"Back to now":"Close";
   if(+r.value!==shift)r.value=shift;
   r.setAttribute("aria-valuetext",shift?whenLbl(nowHour()+shift*3600):"Now");
   $("tbBack").disabled=shift<=+r.min;$("tbFwd").disabled=shift>=+r.max;
@@ -736,7 +759,8 @@ function setShift(v){shift=Math.max(+$("tbRange").min,Math.min(+$("tbRange").max
 $("tbRange").addEventListener("input",function(){setShift(+this.value)});
 $("tbBack").addEventListener("click",function(){setShift(shift-1)});
 $("tbFwd").addEventListener("click",function(){setShift(shift+1)});
-$("tbNow").addEventListener("click",function(){setShift(0)});
+$("tbNow").addEventListener("click",function(){tbOpen=false;setShift(0)});   // closing always returns to now: a hidden slider never leaves the page on another time
+$("timeBtn").addEventListener("click",function(){tbOpen=true;render();$("tbRange").focus({preventScroll:true})});
 $("list").addEventListener("toggle",function(e){
   const det=e.target;if(!(det.classList&&det.classList.contains("card")))return;
   const k=det.dataset.k;
@@ -768,28 +792,40 @@ $("shareBtn").addEventListener("click",async function(){
   try{await navigator.clipboard.writeText(url);toast("Link copied. Paste it into WhatsApp or a message.")}catch(e){prompt("Copy this link:",url)}
 });
 // ---------- saving to the home screen ----------
-// Android Chrome hands us an install event, so one tap on our Save button brings up its own confirm.
-// iPhones have no such thing: only the person can add a page, from Safari's Share menu, so we show the steps.
-let installEvt=null;
-function device(){const ua=navigator.userAgent||"",ios=/iPhone|iPad|iPod/.test(ua)||(/Macintosh/.test(ua)&&navigator.maxTouchPoints>1),and=/Android/.test(ua);return {ios:ios,and:and,mac:!ios&&/Macintosh/.test(ua)}}
+// Android Chrome hands us an install event: our "Yes, save it" brings up its own one confirm. Chrome only offers it
+// after someone has tapped the page and spent ~30 s on it, and never inside WhatsApp's built-in browser; there we
+// offer a one-tap jump into Chrome. iPhones allow no such thing for any website, so they get picture steps.
+let installEvt=null,leaving=false;
+const viaChrome=/[?&]inchrome=1/.test(location.search);
+if(viaChrome){try{history.replaceState(history.state,"",location.pathname+location.hash)}catch(e){}}   // before writeHash reads location.search
+function device(){
+  const ua=navigator.userAgent||"",pad=/iPad/.test(ua)||(/Macintosh/.test(ua)&&navigator.maxTouchPoints>1),ios=pad||/iPhone|iPod/.test(ua),and=/Android/.test(ua);
+  return {ios:ios,pad:pad,and:and,mac:!ios&&/Macintosh/.test(ua),inApp:ios&&!/Safari\//.test(ua)};   // iOS in-app browsers drop the Safari token
+}
 function openSave(){
-  const d=device(),one=!!installEvt,dlg=$("howto");
-  $("hSave").hidden=!one;$("hWa").hidden=one;
-  $("hIos").hidden=one||d.and||d.mac;$("hAnd").hidden=one||d.ios||d.mac;$("hMac").hidden=one||d.ios||d.and;
-  $("howtoClose").textContent=one?"Not now":"Got it";$("howtoClose").classList.toggle("primary",!one);
+  const d=device(),one=!!installEvt,jump=!one&&d.and&&!viaChrome,ios=!one&&d.ios,dlg=$("howto");
+  $("hSave").hidden=!one;$("hChrome").hidden=!jump;$("hIos").hidden=!ios;
+  $("hAnd").hidden=one||jump||d.ios||d.mac;$("hMac").hidden=one||!d.mac;$("hWa").hidden=one||jump||ios||viaChrome;
+  $("andStep1").hidden=viaChrome;
+  $("safariBtn").hidden=!(ios&&d.inApp);
+  $("iosNote").hidden=!(stored(K_CITIES)||unit!==UNIT0||big);   // only for someone who changed settings in Safari
+  $("iosWhere").textContent=d.pad?"at the top right of the screen":"at the bottom of the screen";
+  $("hArrow").hidden=!(ios&&!d.pad&&!d.inApp);
+  dlg.classList.toggle("sheet",ios&&!d.pad);   // iPhone: sits on Safari's bottom bar, arrow pointing at Share
+  $("howtoClose").textContent=one||jump?"Not now":"Got it";
   if(!dlg.open){if(dlg.showModal)dlg.showModal();else dlg.setAttribute("open","")}
 }
 function closeSave(){const dlg=$("howto");if(dlg.open){if(dlg.close)dlg.close();else dlg.removeAttribute("open")}}
-// Ask once, on a phone or tablet, a few seconds after the page opens; never inside the saved app or the editor.
+// Ask on a phone or tablet only, never inside the saved app or the editor, until they answer once.
 const askAfter=Date.now()+4000;
 function maybeAsk(){
   if(stored(K_ASKED)||standalone()||editing||document.visibilityState!=="visible"||$("howto").open)return;
-  const d=device();if(!d.ios&&!d.and)return;
-  store(K_ASKED,1);openSave();
+  const d=device();if(d.ios||d.and)openSave();
 }
+$("howto").addEventListener("close",function(){if(!leaving)store(K_ASKED,1)});
 window.addEventListener("beforeinstallprompt",function(e){
-  e.preventDefault();installEvt=e;   // our Save button replaces Chrome's small banner
-  setTimeout(maybeAsk,Math.max(0,askAfter-Date.now()));
+  e.preventDefault();installEvt=e;   // our button replaces Chrome's small banner
+  if($("howto").open)openSave();else setTimeout(maybeAsk,Math.max(0,askAfter-Date.now()));
 });
 window.addEventListener("appinstalled",function(){installEvt=null;store(K_ASKED,1);$("homeBtn").hidden=true;closeSave();toast("Saved! Look for Weather on your home screen.")});
 $("saveBtn").addEventListener("click",async function(){
@@ -797,13 +833,14 @@ $("saveBtn").addEventListener("click",async function(){
   installEvt=null;closeSave();   // an install event can only be used once
   try{await e.prompt();const c=await e.userChoice;if(c&&c.outcome==="accepted")toast("Saved! Look for Weather on your home screen.")}catch(err){}
 });
+// Android intent link: opens this page in Chrome (marked, so Chrome shows Save, never another "Open in Chrome")
+$("chromeBtn").addEventListener("click",function(){leaving=true;this.href="intent://"+location.host+location.pathname+"?inchrome=1#Intent;scheme=https;package=com.android.chrome;S.browser_fallback_url="+encodeURIComponent(location.origin+location.pathname)+";end"});
+$("safariBtn").addEventListener("click",function(){leaving=true;this.href="x-safari-https://"+location.host+location.pathname});
 $("homeBtn").hidden=standalone();
 $("homeBtn").addEventListener("click",openSave);
 $("howto").addEventListener("submit",function(e){if(!this.showModal){e.preventDefault();this.removeAttribute("open")}});   // old Safari: no <dialog>, so the form would reload the page
-// iPhone: ask after a few seconds. Android: ask when Chrome says the page can be installed (above); if it never does
-// (WhatsApp's built-in browser, Firefox), show the steps after 35 s, which also covers Chrome's "used it a bit" rule.
 setTimeout(function(){if(device().ios)maybeAsk()},4000);
-setTimeout(function(){if(device().and&&!installEvt)maybeAsk()},35000);
+setTimeout(function(){if(device().and&&!installEvt)maybeAsk()},45000);
 
 // ---------- editing the list ----------
 let found=[],qSeq=0,qTimer=0,drag=null;
@@ -813,7 +850,7 @@ function renderEditor(){
   $("elist").innerHTML=cities.map(function(c,i){
     const nm=esc(c.n),sub=esc(c.l?c.n+(where(c)?", "+where(c):""):where(c));
     return '<li data-i="'+i+'"><span class="grip" title="Drag to move" aria-hidden="true">☰</span>'
-      +'<button type="button" class="ename" data-act="name" aria-label="'+nm+': give it a nickname"><b>'+esc(c.l||c.n)+(i===0?'<span class="home">🏠 Home</span>':'')+'</b><small>'+sub+'</small></button>'
+      +'<button type="button" class="ename" data-act="name" aria-label="'+nm+': give it a nickname"><b>'+flag(c.cc)+esc(c.l||c.n)+(i===0?'<span class="home">🏠 Home</span>':'')+'</b><small>'+sub+'</small></button>'
       +'<button type="button" data-act="up" aria-label="Move '+nm+' up"'+(i?"":" disabled")+'>▲</button>'
       +'<button type="button" data-act="down" aria-label="Move '+nm+' down"'+(i<cities.length-1?"":" disabled")+'>▼</button>'
       +'<button type="button" data-act="del" aria-label="Remove '+nm+'"'+(cities.length>1?"":" disabled")+'>✕</button></li>';
@@ -906,6 +943,7 @@ function selftest(){
   ok(hIdx(fh,t0+7200)===2&&hIdx(fh,t0+10800)===-1&&hIdx(fh,t0-3600)===-1,"hour lookup on the shared timeline");
   ok(isoIn("Asia/Kolkata",new Date(Date.UTC(2026,9,18,15,0)))==="2026-10-18T20:30"&&isoIn("Europe/London",new Date(Date.UTC(2026,9,25,12,0)))==="2026-10-25T12:00","local time at a picked hour, incl. after a clock change");
   ok(tipAt({temp:60,code:0},2)==="😴 Middle of the night there"&&tipAt({temp:70,code:0,pp:60},14)==="☂️ 60% chance of rain","tips for a picked hour");
+  ok(flag("IN")==="🇮🇳 "&&flag("")===""&&flag("x1")==="","country flags");
   ok(wxLook(null,true)[1]!=="Fog"&&wxLook(45,true)[1]==="Fog","a missing weather code is not fog");
   ok(tcol(-40)==="rgb(124,108,240)"&&tcol(140)==="rgb(239,90,74)"&&tcol(32)==="rgb(79,143,247)","temperature colours");
   return bad;
