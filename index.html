@@ -54,6 +54,15 @@ button[aria-pressed="true"]{background:var(--acc);border-color:var(--acc);color:
 .gwhen{margin:0 0 6px;color:var(--mut);font-size:.92rem}
 #glance ul{margin:0;padding:0;list-style:none}
 #glance li{padding:3px 0}
+#ctable h2{margin:0 0 4px;font-size:1.1rem}
+#ctab{width:100%;font-size:1rem}
+#ctab th{font-size:.82rem;color:var(--mut);font-weight:700}
+#ctab th,#ctab td{padding:8px 4px}
+#ctab td:first-child{white-space:normal;position:static;width:100%}   /* names wrap so the table always fits the screen */
+.jump{white-space:normal;overflow-wrap:break-word}
+html.big #ctab{font-size:.9rem}
+#ctab tr:last-child td{border-bottom:0}
+.jump{border:0;background:none;padding:0;min-height:0;font-weight:650;text-align:left;color:var(--ink);border-radius:6px}
 #list{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,350px),1fr));gap:12px;align-items:start;margin-top:12px}
 #list>*{min-width:0}
 .card{border-radius:18px;overflow:hidden;background:#fff;box-shadow:0 1px 3px rgba(16,32,51,.14)}
@@ -92,8 +101,11 @@ button[aria-pressed="true"]{background:var(--acc);border-color:var(--acc);color:
 .facts span{display:block;color:var(--mut);font-size:.82rem}
 .facts .wide{grid-column:1/-1}
 .hours{display:flex;gap:6px;overflow-x:auto;-webkit-overflow-scrolling:touch;overscroll-behavior-x:contain;padding:2px 0 8px}
-.hr{flex:0 0 62px;display:flex;flex-direction:column;align-items:center;gap:2px;background:var(--soft);border-radius:12px;padding:8px 2px;font-size:.86rem}
+.hr{flex:0 0 74px;display:flex;flex-direction:column;align-items:center;gap:2px;background:var(--soft);border-radius:12px;padding:8px 2px;font-size:.86rem}
 .hr b{font-size:1.05rem}
+.hr.past{background:#e6eaef;color:var(--mut)}
+.hr.now{box-shadow:inset 0 0 0 2px var(--acc)}
+.hr small{font-size:.72rem;font-weight:700;color:var(--mut);min-height:1em}
 .pp{color:#1d5fa8;font-weight:650;font-size:.82rem;min-height:1.15em}
 .days{display:grid;grid-template-columns:auto auto auto minmax(24px,1fr) auto;column-gap:8px;align-items:center}
 .days .trk{min-width:0}
@@ -191,6 +203,7 @@ footer a{color:var(--acc)}
 
 <main id="main">
   <section id="glance" class="panel" hidden></section>
+  <section id="ctable" class="panel" hidden></section>
   <div id="list"></div>
   <div id="timebar" class="timebar" hidden>
     <div class="tb-top"><span id="tbLabel"></span><button id="tbNow" type="button" class="primary">Close</button></div>
@@ -241,7 +254,7 @@ footer a{color:var(--acc)}
     <a id="safariBtn" class="primary big-btn" href="#" hidden>Open in Safari first</a>
     <p id="iosNote" class="muted small">After saving, set your cities and °C or °F again in the saved app. iPhone keeps them separate from Safari.</p></div>
   <div id="hAnd"><h3>Android</h3><ol><li id="andStep1">Open this page in <b>Chrome</b>.</li><li>Tap the <b>⋮</b> menu at the top right.</li><li>Tap <b>Add to Home screen</b> (or <b>Install app</b>), then <b>Add</b>.</li></ol></div>
-  <div id="hMac"><h3>Mac</h3><ol><li>In <b>Safari</b>: <b>File</b> menu → <b>Add to Dock</b>.</li><li>In <b>Chrome</b>: <b>⋮</b> menu → <b>Cast, save and share</b> → <b>Install page as app</b>.</li></ol></div>
+  <div id="hMac"><h3>Computer</h3><ol><li>On a Mac in <b>Safari</b>: <b>File</b> menu → <b>Add to Dock</b>.</li><li>In <b>Chrome</b> or <b>Edge</b>: <b>⋮</b> or <b>⋯</b> menu → <b>Cast, save and share</b> (or <b>Apps</b>) → <b>Install</b>.</li></ol></div>
   <p id="hWa" class="muted small">Opened it from WhatsApp? First tap <b>⋯</b> and choose <b>Open in Safari</b> or <b>Open in Chrome</b>.</p>
   <form method="dialog"><button id="howtoClose" style="width:100%">Not now</button></form>
   <div id="hArrow" aria-hidden="true" hidden><span>⬇</span>The Share button is down here</div>
@@ -365,7 +378,7 @@ function region(cc){
   if(cc==="US")return "USA";if(cc==="GB")return "UK";
   try{return new Intl.DisplayNames(["en"],{type:"region"}).of(cc)||cc}catch(e){return cc}
 }
-function flag(cc){return /^[A-Z]{2}$/.test(cc||"")?String.fromCodePoint(0x1F1E6+cc.charCodeAt(0)-65,0x1F1E6+cc.charCodeAt(1)-65)+" ":""}   // "US" -> 🇺🇸
+function flag(cc){return /^[A-Z]{2}$/.test(cc||"")?'<span aria-hidden="true">'+String.fromCodePoint(0x1F1E6+cc.charCodeAt(0)-65,0x1F1E6+cc.charCodeAt(1)-65)+'</span>\u00a0':""}   // no-break space keeps the flag with the name   // "US" -> 🇺🇸
 function where(c){return [c.a,c.cc&&region(c.cc)].filter(Boolean).join(", ")}
 // Temperature colours (°F stops): purple-blue cold through green to orange-red hot
 const TSTOPS=[[10,[124,108,240]],[32,[79,143,247]],[50,[56,197,214]],[64,[95,211,138]],[75,[245,209,66]],[86,[245,154,60]],[100,[239,90,74]]];
@@ -559,7 +572,7 @@ function card(c,ci,ctx){
   else if(hs&&num(hs.temp)&&num(s.temp)){const dd=s.temp-hs.temp;cmp=" · "+(Math.abs(dd)<2?"about the same as ":D(dd)+(dd>0?" warmer":" colder")+" than ")+esc(ctx.home.n)}
   const lo=dl.temperature_2m_min[j],hi=dl.temperature_2m_max[j],span=(ctx.hi-ctx.lo)||1,
     L=(lo-ctx.lo)/span*100,R=(hi-ctx.lo)/span*100,N=Math.min(100,Math.max(0,(s.temp-ctx.lo)/span*100)),t=live?tip(f,d.aq):tipAt(s,h);
-  return '<details class="card s-'+sky(f,s)+'" data-k="'+esc(k)+'"'+open+'><summary>'+head
+  return '<details class="card s-'+sky(f,s)+'" id="card-'+ci+'" data-k="'+esc(k)+'"'+open+'><summary>'+head
     +'<span class="now"><span class="tp">'+T(s.temp)+'</span><span class="cd">'+look[0]+' '+look[1]+'</span>'
     +(num(s.app)&&num(s.temp)&&Math.abs(s.app-s.temp)>=5?'<span class="cd">Feels like '+T(s.app)+'</span>':'')+'</span></span>'
     +'<span class="feel">'+(live?'<span data-part="'+tzA+'" data-feel="'+fw+'">':'<span>')+(fw?fw+' '+partOfDay(h):cap(partOfDay(h)))+'</span>'+cmp+'</span>'
@@ -579,11 +592,16 @@ function body(c,ci,f,d,k){
   if(nm){const n=nm[mo],dd=dl.temperature_2m_max[i]-n.hi;
     s+='<div class="wide"><span>Usual for '+F({month:"long",timeZone:"UTC"}).format(wall(dl.time[i]))+'</span>High '+T(n.hi)+' / low '+T(n.lo)
       +' · <b>'+(Math.abs(dd)<5?"today is about usual":dd>0?"today is warmer than usual":"today is cooler than usual")+'</b></div>'}
-  s+='</div><h3>Next 24 hours</h3><div class="hours">';
+  s+='</div><h3>Hour by hour</h3><p class="muted small" style="margin:-2px 0 6px">Swipe right for the past 24 hours, left for the next 24.</p><div class="hours" data-hours>';
   if(i0<0)s+='<p class="muted">'+(busy?"Loading…":"Not available right now.")+'</p>';
-  else for(let j=0;j<25&&i0+j<H.time.length;j++){
-    const x=i0+j,lk=j?wxLook(H.weather_code[x],H.is_day[x]===1):wxLook(cur.weather_code,cur.is_day===1),pp=H.precipitation_probability[x];
-    s+='<div class="hr"><span>'+(j?esc(hourAt(c.tz,new Date(H.time[x]*1000))):"Now")+'</span><span title="'+lk[1]+'">'+lk[0]+'</span><b>'+T(j?H.temperature_2m[x]:cur.temperature_2m)+'</b><span class="pp">'+(pp>=20?"💧"+pp+"%":"")+'</span></div>';
+  else{
+    const today=isoIn(c.tz,new Date()).slice(0,10);
+    for(let j=-24;j<=24;j++){
+      const x=i0+j;if(x<0||x>=H.time.length)continue;
+      const d=new Date(H.time[x]*1000),lk=j?wxLook(H.weather_code[x],H.is_day[x]===1):wxLook(cur.weather_code,cur.is_day===1),pp=H.precipitation_probability[x],
+        other=isoIn(c.tz,d).slice(0,10)!==today;   // "Sat 3 PM" vs today's 3 PM
+      s+='<div class="hr'+(j<0?' past':j?'':' now')+'"'+(j?'':' data-now-hour')+'><small>'+(other?esc(F({timeZone:c.tz,weekday:"short"}).format(d)):"")+'</small><span>'+(j?esc(hourAt(c.tz,d)):"Now")+'</span><span title="'+lk[1]+'">'+lk[0]+'</span><b>'+T(j?H.temperature_2m[x]:cur.temperature_2m)+'</b><span class="pp">'+(j>=0&&pp>=20?"💧"+pp+"%":"")+'</span></div>';
+    }
   }
   s+='</div><h3>Next 7 days</h3><div class="days">';
   const last=Math.min(dl.time.length-1,i+6);
@@ -670,6 +688,7 @@ function monthDetail(c,y,q){
   const m=y.months[q],nm=norms(c)[+m.ym.slice(5,7)-1];
   return "<b>"+esc(monthLbl(m.ym))+"</b>: average high "+T(m.hi)+" (usual "+T(nm.hi)+") · average low "+T(m.lo)+" (usual "+T(nm.lo)+")";
 }
+function hoursToNow(root){(root||document).querySelectorAll("[data-hours]").forEach(function(h){const n=h.querySelector("[data-now-hour]");if(n)h.scrollLeft=n.offsetLeft-h.offsetLeft})}
 function render(){
   if(editing)return;
   const at=shift?nowHour()+shift*3600:null,ready=[],snaps={};let lo=Infinity,hi=-Infinity;
@@ -681,7 +700,8 @@ function render(){
   });
   const ctx={lo:lo,hi:hi,home:cities[0],snaps:snaps};
   $("list").innerHTML=cities.map(function(c,ci){return card(c,ci,ctx)}).join("");
-  renderGlance(ready,at);renderTimebar(ready);
+  hoursToNow($("list"));
+  renderGlance(ready,at);renderTable(snaps);renderTimebar(ready);
   if($("normals").open)renderNormals();
 }
 function renderGlance(ready,at){
@@ -705,6 +725,19 @@ function renderGlance(ready,at){
   if(ch)items.push((ch.e.delta<0?"📉 ":"📈 ")+nm(ch.x)+" turned "+D(ch.e.delta)+(ch.e.delta<0?" cooler ":" warmer ")+relDay(ch.x.d.f,ch.e.j)+(ch.e.gust>=30?", with strong wind":""));
   g.innerHTML="<h2>At a glance</h2><p class=\"gwhen\" data-now>"+esc(nowLine())+"</p><ul>"+items.map(function(s){return "<li>"+s+"</li>"}).join("")+"</ul>";
   g.hidden=false;
+}
+// Every city on one screen: city, now, today's high and low. Same order as the cards; follows the time slider.
+function renderTable(snaps){
+  const t=$("ctable");
+  if(!Object.keys(snaps).length){t.hidden=true;return}
+  let h='<h2>All cities</h2><table id="ctab"><thead><tr><th>City</th><th>'+(shift?"Then":"Now")+'</th><th>High</th><th>Low</th></tr></thead><tbody>';
+  cities.forEach(function(c,ci){
+    const k=key(c),f=wx[k]&&wx[k].f,s=snaps[k],name='<button type="button" class="jump" data-goto="'+ci+'">'+flag(c.cc)+esc(c.l||c.n)+'</button>';
+    if(!f||!s){h+='<tr><td>'+name+'</td><td colspan="3">…</td></tr>';return}
+    const j=dIdx(f,s),lk=wxLook(s.code,s.day);
+    h+='<tr><td>'+name+'</td><td><span aria-hidden="true">'+lk[0]+'</span> <b>'+T(s.temp)+'</b></td><td>'+T(f.daily.temperature_2m_max[j])+'</td><td>'+T(f.daily.temperature_2m_min[j])+'</td></tr>';
+  });
+  t.innerHTML=h+'</tbody></table>';t.hidden=false;
 }
 function renderTimebar(ready){
   const bar=$("timebar"),r=$("tbRange");
@@ -767,7 +800,7 @@ $("list").addEventListener("toggle",function(e){
   if(!det.open){delete openSet[k];return}
   openSet[k]=1;
   const b=det.querySelector(".body"),ci=cities.map(key).indexOf(k),w=wx[k];
-  if(b&&!b.firstChild&&ci>=0&&w&&w.f)b.innerHTML=body(cities[ci],ci,w.f,w,k);
+  if(b&&!b.firstChild&&ci>=0&&w&&w.f){b.innerHTML=body(cities[ci],ci,w.f,w,k);hoursToNow(b)}
 },true);
 $("list").addEventListener("click",function(e){
   const t=e.target,det=t.closest&&t.closest("details.card");if(!det)return;
@@ -783,6 +816,7 @@ $("list").addEventListener("click",function(e){
   const yb=t.closest("[data-year]");if(yb&&c){loadArchive(c);return}
   if(t.closest("[data-close]")){det.open=false;det.scrollIntoView({block:"nearest"})}
 });
+$("ctable").addEventListener("click",function(e){const b=e.target.closest("[data-goto]");if(b){const card=$("card-"+b.getAttribute("data-goto"));if(card)card.scrollIntoView({block:"start"})}});   // no #anchor: the address bar carries the city list
 $("normals").addEventListener("toggle",function(){if(this.open){renderNormals();fillNormals()}});
 const canShare=/^https?:$/.test(location.protocol);
 $("shareBtn").hidden=!canShare;
@@ -805,7 +839,7 @@ function device(){
 function openSave(){
   const d=device(),one=!!installEvt,jump=!one&&d.and&&!viaChrome,ios=!one&&d.ios,dlg=$("howto");
   $("hSave").hidden=!one;$("hChrome").hidden=!jump;$("hIos").hidden=!ios;
-  $("hAnd").hidden=one||jump||d.ios||d.mac;$("hMac").hidden=one||!d.mac;$("hWa").hidden=one||jump||ios||viaChrome;
+  $("hAnd").hidden=one||jump||!d.and;$("hMac").hidden=one||d.ios||d.and;$("hWa").hidden=one||jump||ios||viaChrome;
   $("andStep1").hidden=viaChrome;
   $("safariBtn").hidden=!(ios&&d.inApp);
   $("iosNote").hidden=!(stored(K_CITIES)||unit!==UNIT0||big);   // only for someone who changed settings in Safari
@@ -815,7 +849,7 @@ function openSave(){
   $("howtoClose").textContent=one||jump?"Not now":"Got it";
   if(!dlg.open){if(dlg.showModal)dlg.showModal();else dlg.setAttribute("open","")}
 }
-function closeSave(){const dlg=$("howto");if(dlg.open){if(dlg.close)dlg.close();else dlg.removeAttribute("open")}}
+function closeSave(){const dlg=$("howto");if(dlg.open){if(dlg.close)dlg.close();else{dlg.removeAttribute("open");if(!leaving)store(K_ASKED,1)}}}
 // Ask on a phone or tablet only, never inside the saved app or the editor, until they answer once.
 const askAfter=Date.now()+4000;
 function maybeAsk(){
@@ -838,7 +872,7 @@ $("chromeBtn").addEventListener("click",function(){leaving=true;this.href="inten
 $("safariBtn").addEventListener("click",function(){leaving=true;this.href="x-safari-https://"+location.host+location.pathname});
 $("homeBtn").hidden=standalone();
 $("homeBtn").addEventListener("click",openSave);
-$("howto").addEventListener("submit",function(e){if(!this.showModal){e.preventDefault();this.removeAttribute("open")}});   // old Safari: no <dialog>, so the form would reload the page
+$("howto").addEventListener("submit",function(e){if(!this.showModal){e.preventDefault();this.removeAttribute("open");if(!leaving)store(K_ASKED,1)}});   // old Safari: no <dialog>, so the form would reload the page
 setTimeout(function(){if(device().ios)maybeAsk()},4000);
 setTimeout(function(){if(device().and&&!installEvt)maybeAsk()},45000);
 
@@ -943,7 +977,7 @@ function selftest(){
   ok(hIdx(fh,t0+7200)===2&&hIdx(fh,t0+10800)===-1&&hIdx(fh,t0-3600)===-1,"hour lookup on the shared timeline");
   ok(isoIn("Asia/Kolkata",new Date(Date.UTC(2026,9,18,15,0)))==="2026-10-18T20:30"&&isoIn("Europe/London",new Date(Date.UTC(2026,9,25,12,0)))==="2026-10-25T12:00","local time at a picked hour, incl. after a clock change");
   ok(tipAt({temp:60,code:0},2)==="😴 Middle of the night there"&&tipAt({temp:70,code:0,pp:60},14)==="☂️ 60% chance of rain","tips for a picked hour");
-  ok(flag("IN")==="🇮🇳 "&&flag("")===""&&flag("x1")==="","country flags");
+  ok(flag("IN")==='<span aria-hidden="true">🇮🇳</span>\u00a0'&&flag("")===""&&flag("x1")==="","country flags");
   ok(wxLook(null,true)[1]!=="Fog"&&wxLook(45,true)[1]==="Fog","a missing weather code is not fog");
   ok(tcol(-40)==="rgb(124,108,240)"&&tcol(140)==="rgb(239,90,74)"&&tcol(32)==="rgb(79,143,247)","temperature colours");
   return bad;
