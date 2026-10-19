@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#1a5f9e">
-<meta name="color-scheme" content="light">
+<meta name="color-scheme" content="light dark">
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://static.cloudflareinsights.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://hits.sh; connect-src https://api.open-meteo.com https://air-quality-api.open-meteo.com https://geocoding-api.open-meteo.com https://archive-api.open-meteo.com https://cloudflareinsights.com; manifest-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'">
 <title>Weather — all your cities, side by side</title>
 <meta name="description" content="Weather for all your cities on one page: right now, the next week, the last two weeks and the past year. Free, no ads, no sign-up.">
@@ -30,7 +30,15 @@
 <meta name="twitter:description" content="All your cities on one page. Free, big and simple. No ads, no sign-up.">
 <meta name="twitter:image" content="https://danpune.github.io/weather/preview.jpg?v=2">
 <style>
-:root{--bg:#eef3f8;--ink:#132033;--mut:#4f5d6e;--line:#dbe3ec;--soft:#f2f5f9;--acc:#1a5f9e}
+:root{--bg:#eef3f8;--ink:#132033;--mut:#4f5d6e;--line:#dbe3ec;--soft:#f2f5f9;--acc:#1a5f9e;--accbg:#1a5f9e;
+  --panel:#fff;--edge:#bfcbd8;--pp:#1d5fa8;--past:#e6eaef;--trk:#e3e9f0;--note:#fff7ed;--noteedge:#fbd5a5;--hl:#fff4cc;
+  --away:#fff6dc;--awayedge:#efc368;--homebg:#e0ecfa;--homefg:#164e86;--warnbg:#fff4e5;--warnedge:#f5c48a;--warnfg:#7a3e00;
+  --input:#9fb0c3;--slide:#cfd9e4;--grid:#e3e9f0;--axis:#5b6878;--today:#e6f0fb;--sel:#fde68a;color-scheme:light}
+/* Night mode: same names, darker values. The city cards keep their real sky colours. */
+html.dark{--bg:#0d131a;--ink:#e6ecf2;--mut:#a7b3c1;--line:#273341;--soft:#1c2632;--acc:#6db0f0;--accbg:#2a6db0;
+  --panel:#151e28;--edge:#344252;--pp:#83c3ff;--past:#18212b;--trk:#2a3644;--note:#2a2113;--noteedge:#6a5228;--hl:#3b3313;
+  --away:#2c2513;--awayedge:#7a6326;--homebg:#1e3552;--homefg:#d3e6fb;--warnbg:#36260f;--warnedge:#7a5a2a;--warnfg:#ffd7a0;
+  --input:#4b5b6d;--slide:#334252;--grid:#273341;--axis:#a7b3c1;--today:#1a2c42;--sel:#6e5c1c;color-scheme:dark}
 *{box-sizing:border-box}
 [hidden]{display:none!important}
 html{font-size:106.25%;-webkit-text-size-adjust:100%;text-size-adjust:100%}
@@ -41,15 +49,15 @@ header{padding:calc(16px + env(safe-area-inset-top)) 0 4px}
 h1{margin:0;font-size:1.7rem;line-height:1.15}
 .tag{margin:2px 0 0;color:var(--mut)}
 .bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:12px}
-button{font:inherit;font-weight:650;color:var(--ink);background:#fff;border:1px solid #bfcbd8;border-radius:999px;min-height:46px;padding:8px 16px;cursor:pointer;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+button{font:inherit;font-weight:650;color:var(--ink);background:var(--panel);border:1px solid var(--edge);border-radius:999px;min-height:46px;padding:8px 16px;cursor:pointer;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
 button:disabled{opacity:.35;cursor:default}
-button[aria-pressed="true"]{background:var(--acc);border-color:var(--acc);color:#fff}
+button[aria-pressed="true"]{background:var(--accbg);border-color:var(--accbg);color:#fff}
 :focus-visible{outline:3px solid #f59e0b;outline-offset:2px}
-.seg{display:inline-flex;background:#fff;border:1px solid #bfcbd8;border-radius:999px;padding:3px}
+.seg{display:inline-flex;background:var(--panel);border:1px solid var(--edge);border-radius:999px;padding:3px}
 .seg button{border:0;min-height:40px;padding:6px 16px}
 #updated{margin:8px 0 0;color:var(--mut);font-size:.95rem}
-.warn{background:#fff4e5;border:1px solid #f5c48a;color:#7a3e00;border-radius:12px;padding:10px 12px;margin:10px 0}
-.panel{background:#fff;border:1px solid var(--line);border-radius:16px;padding:12px 16px;margin:12px 0}
+.warn{background:var(--warnbg);border:1px solid var(--warnedge);color:var(--warnfg);border-radius:12px;padding:10px 12px;margin:10px 0}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:12px 16px;margin:12px 0}
 #glance h2{margin:0 0 2px;font-size:1.1rem}
 .gwhen{margin:0 0 6px;color:var(--mut);font-size:.92rem}
 #glance ul{margin:0;padding:0;list-style:none}
@@ -75,7 +83,7 @@ html.big #ctab .em,html.big #ctab .tf{display:none}
 .jump{border:0;background:none;padding:0;min-height:0;font-weight:650;text-align:left;color:var(--ink);border-radius:6px}
 #list{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,350px),1fr));gap:12px;align-items:start;margin-top:12px}
 #list>*{min-width:0}
-.card{border-radius:18px;overflow:hidden;background:#fff;box-shadow:0 1px 3px rgba(16,32,51,.14)}
+.card{border-radius:18px;overflow:hidden;background:var(--panel);box-shadow:0 1px 3px rgba(16,32,51,.14)}
 .card>summary{display:block;list-style:none;cursor:pointer;color:#fff;padding:14px 16px 10px}
 .card>summary::-webkit-details-marker{display:none}
 .s-day>summary{background:linear-gradient(160deg,#1a5f9e,#2775b5)}
@@ -113,55 +121,59 @@ html.big #ctab .em,html.big #ctab .tf{display:none}
 .hours{display:flex;gap:6px;overflow-x:auto;-webkit-overflow-scrolling:touch;overscroll-behavior-x:contain;padding:2px 0 8px}
 .hr{flex:0 0 74px;display:flex;flex-direction:column;align-items:center;gap:2px;background:var(--soft);border-radius:12px;padding:8px 2px;font-size:.86rem}
 .hr b{font-size:1.05rem}
-.hr.past{background:#e6eaef;color:var(--mut)}
+.hr.past{background:var(--past);color:var(--mut)}
 .hr.now{box-shadow:inset 0 0 0 2px var(--acc)}
 .hr small{font-size:.72rem;font-weight:700;color:var(--mut);min-height:1em}
-.pp{color:#1d5fa8;font-weight:650;font-size:.82rem;min-height:1.15em}
+.pp{color:var(--pp);font-weight:650;font-size:.82rem;min-height:1.15em}
 .days{display:grid;grid-template-columns:auto auto auto minmax(24px,1fr) auto;column-gap:8px;align-items:center}
 .days .trk{min-width:0}
 .days .em{text-align:center;line-height:1.1}
-.days .em small{display:block;color:#1d5fa8;font-weight:650;font-size:.75rem}
+.days .em small{display:block;color:var(--pp);font-weight:650;font-size:.75rem}
 .dy{display:contents}
 .dy>span:not(.trk){padding:7px 0}
 .dy .lo{color:var(--mut);text-align:right}
 .dy .hi{font-weight:700}
-.body .trk{background:#e3e9f0}
-.change{background:#fff7ed;border:1px solid #fbd5a5;border-radius:12px;padding:9px 11px;margin:6px 0 8px}
+.body .trk{background:var(--trk)}
+.change{background:var(--note);border:1px solid var(--noteedge);border-radius:12px;padding:9px 11px;margin:6px 0 8px}
 .chart svg{display:block;width:100%;height:auto}
 .chart .hit{cursor:pointer}
+.chart line{stroke:var(--grid)}.chart line.zero{stroke:var(--axis)}.chart text{fill:var(--axis)}.chart text[font-weight]{fill:var(--ink)}
+.chart .tband{fill:var(--today)}.chart .selband{fill:var(--sel)}
 .sel{background:var(--soft);border-radius:10px;padding:8px 10px;margin-top:4px;font-size:.95rem;min-height:2.6em}
 .wide-btn{width:100%;margin-top:6px}
 .muted{color:var(--mut)}
 .actions{display:flex;flex-wrap:wrap;gap:10px;margin:18px 0}
 .actions button{flex:1 1 240px}
-.primary{background:var(--acc);border-color:var(--acc);color:#fff}
+.primary{background:var(--accbg);border-color:var(--accbg);color:#fff}
 .linkish{border:0;background:none;color:var(--acc);text-decoration:underline;font-weight:600}
 #editor h2{margin:8px 0 10px;font-size:1.4rem}
-#q{display:block;width:100%;margin-top:6px;font:inherit;font-size:1.06rem;padding:12px 14px;border:2px solid #9fb0c3;border-radius:12px;background:#fff;color:var(--ink)}
+#q{display:block;width:100%;margin-top:6px;font:inherit;font-size:1.06rem;padding:12px 14px;border:2px solid var(--input);border-radius:12px;background:var(--panel);color:var(--ink)}
 #results{display:grid;gap:6px;margin:8px 0}
 .res{display:block;width:100%;text-align:left;border-radius:12px}
 .res span{font-weight:400;color:var(--mut)}
+.titlerow{display:flex;justify-content:space-between;align-items:center;gap:8px}
+#nightBtn{flex:none;min-height:40px;padding:6px 14px}
 #elist{list-style:none;margin:10px 0;padding:0}
-#elist li{display:flex;align-items:center;gap:6px;background:#fff;border:1px solid var(--line);border-radius:14px;padding:6px;margin-bottom:8px}
+#elist li{display:flex;align-items:center;gap:6px;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:6px;margin-bottom:8px}
 #elist li.dragging{box-shadow:0 6px 18px rgba(0,0,0,.22);border-color:var(--acc)}
 .grip{flex:none;width:38px;text-align:center;font-size:1.35rem;color:var(--mut);cursor:grab;touch-action:none;-webkit-user-select:none;user-select:none;padding:8px 0}
 .ename{flex:1;min-width:0;text-align:left;border:0;background:none;border-radius:10px;padding:6px 4px}
 .ename b{display:block;overflow-wrap:anywhere}
 .ename small{display:block;font-weight:400;color:var(--mut)}
 #elist li>button:not(.ename){flex:none;width:46px;padding:0}
-.home{font-size:.72rem;background:#e0ecfa;color:#164e86;border-radius:999px;padding:1px 7px;margin-left:4px;font-weight:700;vertical-align:middle}
+.home{font-size:.72rem;background:var(--homebg);color:var(--homefg);border-radius:999px;padding:1px 7px;margin-left:4px;font-weight:700;vertical-align:middle}
 #normals>summary{cursor:pointer;list-style:none}
 #normals>summary::-webkit-details-marker{display:none}
 #normals h2{display:inline;font-size:1.1rem}
 .scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;margin-top:10px}
 table{border-collapse:collapse;font-size:.92rem}
 th,td{padding:7px 8px;white-space:nowrap;text-align:right;border-bottom:1px solid var(--line)}
-th:first-child,td:first-child{text-align:left;position:sticky;left:0;background:#fff;z-index:1}
-th.hl,td.hl{background:#fff4cc}
-dialog{border:0;border-radius:18px;padding:20px;max-width:520px;width:calc(100% - 28px);color:var(--ink)}
+th:first-child,td:first-child{text-align:left;position:sticky;left:0;background:var(--panel);z-index:1}
+th.hl,td.hl{background:var(--hl)}
+dialog{border:0;border-radius:18px;padding:20px;max-width:520px;width:calc(100% - 28px);color:var(--ink);background:var(--panel)}
 dialog::backdrop{background:rgba(15,23,42,.55)}
 dialog.sheet{margin:auto auto 0;width:100%;max-width:560px;border-radius:20px 20px 0 0;padding-bottom:calc(14px + env(safe-area-inset-bottom))}
-.big-btn{display:block;width:100%;text-align:center;font-size:1.15rem;font-weight:700;padding:14px 16px;border-radius:999px;text-decoration:none;border:1px solid var(--acc)}
+.big-btn{display:block;width:100%;text-align:center;font-size:1.15rem;font-weight:700;padding:14px 16px;border-radius:999px;text-decoration:none;border:1px solid var(--accbg)}
 .small{font-size:.92rem}
 .steps{list-style:none;margin:6px 0 10px;padding:0}
 .steps li{display:flex;align-items:center;gap:12px;margin:10px 0;font-size:1.08rem}
@@ -178,8 +190,8 @@ footer{color:var(--mut);font-size:.9rem;margin-top:22px}
 footer a{color:var(--acc)}
 footer .hits{display:inline-block;line-height:0;border-radius:6px;overflow:hidden}
 #toast{position:fixed;left:50%;bottom:calc(18px + env(safe-area-inset-bottom));transform:translateX(-50%);background:#132033;color:#fff;padding:10px 16px;border-radius:14px;font-weight:600;z-index:50;width:max-content;max-width:calc(100% - 28px)}
-.timebar{position:sticky;bottom:0;z-index:20;margin-top:14px;padding:10px 14px calc(10px + env(safe-area-inset-bottom));background:#fff;border:1px solid var(--line);border-radius:16px 16px 0 0;box-shadow:0 -4px 14px rgba(16,32,51,.1)}
-.timebar.away{background:#fff6dc;border-color:#efc368}
+.timebar{position:sticky;bottom:0;z-index:20;margin-top:14px;padding:10px 14px calc(10px + env(safe-area-inset-bottom));background:var(--panel);border:1px solid var(--line);border-radius:16px 16px 0 0;box-shadow:0 -4px 14px rgba(16,32,51,.1)}
+.timebar.away{background:var(--away);border-color:var(--awayedge)}
 .tb-top{display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:40px;line-height:1.25}
 .tb-top small{font-size:.85rem;color:var(--mut)}
 #tbNow{flex:none;min-height:40px;padding:6px 14px}
@@ -187,20 +199,21 @@ footer .hits{display:inline-block;line-height:0;border-radius:6px;overflow:hidde
 .tb-row>button{flex:none;width:46px;padding:0}
 .tb-slide{flex:1;min-width:0}
 #tbRange{-webkit-appearance:none;appearance:none;display:block;width:100%;height:46px;margin:0;background:transparent;cursor:pointer}
-#tbRange::-webkit-slider-runnable-track{height:8px;border-radius:4px;background:#cfd9e4}
-#tbRange::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:32px;height:32px;margin-top:-12px;border-radius:50%;background:var(--acc);border:3px solid #fff;box-shadow:0 1px 5px rgba(0,0,0,.35)}
-#tbRange::-moz-range-track{height:8px;border-radius:4px;background:#cfd9e4}
-#tbRange::-moz-range-thumb{width:26px;height:26px;border-radius:50%;background:var(--acc);border:3px solid #fff;box-shadow:0 1px 5px rgba(0,0,0,.35)}
+#tbRange::-webkit-slider-runnable-track{height:8px;border-radius:4px;background:var(--slide)}
+#tbRange::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:32px;height:32px;margin-top:-12px;border-radius:50%;background:var(--accbg);border:3px solid #fff;box-shadow:0 1px 5px rgba(0,0,0,.35)}
+#tbRange::-moz-range-track{height:8px;border-radius:4px;background:var(--slide)}
+#tbRange::-moz-range-thumb{width:26px;height:26px;border-radius:50%;background:var(--accbg);border:3px solid #fff;box-shadow:0 1px 5px rgba(0,0,0,.35)}
 .tb-ticks{position:relative;height:1.3em;margin-top:-6px;font-size:.78rem;color:var(--mut)}
 .tb-ticks span{position:absolute;top:0;white-space:nowrap}
-.away-note{margin:10px 0 0;padding:6px 10px;border-radius:10px;background:#fff6dc;font-size:.9rem}
+.away-note{margin:10px 0 0;padding:6px 10px;border-radius:10px;background:var(--away);font-size:.9rem}
 @media (max-width:420px){.tp{font-size:2.6rem}h1{font-size:1.5rem}}
 </style>
+<script>try{var t=JSON.parse(localStorage.getItem("fw-theme"));if(t==="dark"||(t!=="light"&&matchMedia("(prefers-color-scheme: dark)").matches))document.documentElement.classList.add("dark")}catch(e){}</script>
 </head>
 <body>
 <div class="wrap">
 <header>
-  <h1>🌤️ Weather</h1>
+  <div class="titlerow"><h1>🌤️ Weather</h1><button id="nightBtn" type="button">🌙 Night</button></div>
   <p class="tag">All your cities, side by side</p>
   <div class="bar">
     <span class="seg" role="group" aria-label="Temperature unit"><button id="uF" type="button">°F</button><button id="uC" type="button">°C</button></span>
@@ -295,7 +308,7 @@ const DEFAULTS=[
 const NORMALS={"austin":{"months":[{"hi":60.9,"lo":41.9},{"hi":65.0,"lo":45.1},{"hi":73.4,"lo":53.8},{"hi":79.1,"lo":59.5},{"hi":85.1,"lo":67.5},{"hi":91.4,"lo":73.6},{"hi":95.4,"lo":76.6},{"hi":95.9,"lo":77.4},{"hi":89.9,"lo":72.5},{"hi":82.0,"lo":62.7},{"hi":70.2,"lo":52.4},{"hi":64.6,"lo":46.5}]},"jersey":{"months":[{"hi":40.0,"lo":25.8},{"hi":42.8,"lo":26.0},{"hi":49.6,"lo":32.3},{"hi":60.0,"lo":42.2},{"hi":70.1,"lo":52.8},{"hi":79.2,"lo":62.2},{"hi":85.2,"lo":69.2},{"hi":83.1,"lo":68.1},{"hi":76.7,"lo":61.6},{"hi":66.2,"lo":51.0},{"hi":54.2,"lo":38.9},{"hi":45.0,"lo":31.8}]},"sanfrancisco":{"months":[{"hi":56.7,"lo":45.9},{"hi":58.8,"lo":46.3},{"hi":59.1,"lo":48.2},{"hi":60.9,"lo":49.9},{"hi":62.6,"lo":52.2},{"hi":66.6,"lo":54.8},{"hi":66.7,"lo":56.1},{"hi":68.1,"lo":57.6},{"hi":70.2,"lo":57.7},{"hi":69.2,"lo":55.1},{"hi":61.6,"lo":49.4},{"hi":56.3,"lo":45.9}]},"conway":{"months":[{"hi":29.7,"lo":10.6},{"hi":31.7,"lo":10.8},{"hi":39.7,"lo":19.6},{"hi":51.6,"lo":31.6},{"hi":66.4,"lo":44.1},{"hi":74.5,"lo":53.3},{"hi":80.5,"lo":59.9},{"hi":78.2,"lo":58.7},{"hi":71.9,"lo":52.3},{"hi":58.4,"lo":41.4},{"hi":44.9,"lo":29.1},{"hi":34.7,"lo":18.4}]},"pune":{"months":[{"hi":83.9,"lo":59.2},{"hi":89.2,"lo":62.4},{"hi":94.0,"lo":67.3},{"hi":99.4,"lo":71.7},{"hi":97.6,"lo":73.3},{"hi":86.2,"lo":73.3},{"hi":79.8,"lo":72.1},{"hi":79.9,"lo":71.3},{"hi":81.8,"lo":70.4},{"hi":84.8,"lo":68.7},{"hi":85.2,"lo":64.3},{"hi":83.8,"lo":61.3}]},"delhi":{"months":[{"hi":66.5,"lo":46.3},{"hi":74.6,"lo":52.0},{"hi":84.6,"lo":60.6},{"hi":97.2,"lo":70.9},{"hi":102.0,"lo":77.5},{"hi":101.0,"lo":81.8},{"hi":92.6,"lo":80.0},{"hi":90.5,"lo":79.0},{"hi":90.6,"lo":76.4},{"hi":89.5,"lo":67.8},{"hi":80.7,"lo":58.5},{"hi":70.7,"lo":49.0}]},"prayagraj":{"months":[{"hi":70.6,"lo":50.5},{"hi":79.3,"lo":56.0},{"hi":89.7,"lo":64.3},{"hi":101.2,"lo":74.4},{"hi":103.7,"lo":80.1},{"hi":100.9,"lo":83.7},{"hi":91.3,"lo":80.5},{"hi":89.6,"lo":79.2},{"hi":89.6,"lo":78.3},{"hi":89.3,"lo":71.8},{"hi":83.2,"lo":62.2},{"hi":74.5,"lo":53.3}]},"telaviv":{"months":[{"hi":62.8,"lo":49.5},{"hi":64.6,"lo":49.7},{"hi":68.5,"lo":53.0},{"hi":74.2,"lo":57.2},{"hi":80.8,"lo":63.6},{"hi":84.4,"lo":69.3},{"hi":87.9,"lo":73.8},{"hi":88.9,"lo":75.4},{"hi":87.5,"lo":73.1},{"hi":83.1,"lo":67.7},{"hi":75.6,"lo":60.0},{"hi":67.4,"lo":53.1}]},"london":{"months":[{"hi":46.0,"lo":34.9},{"hi":48.6,"lo":36.6},{"hi":51.8,"lo":38.6},{"hi":56.9,"lo":40.5},{"hi":63.4,"lo":47.0},{"hi":69.5,"lo":53.0},{"hi":72.7,"lo":57.0},{"hi":72.2,"lo":56.6},{"hi":67.5,"lo":52.6},{"hi":60.0,"lo":47.7},{"hi":51.8,"lo":41.3},{"hi":48.7,"lo":39.5}]},"stockholm":{"months":[{"hi":33.9,"lo":25.6},{"hi":35.8,"lo":26.0},{"hi":41.4,"lo":28.5},{"hi":49.4,"lo":33.1},{"hi":60.3,"lo":42.4},{"hi":69.5,"lo":52.4},{"hi":71.3,"lo":55.9},{"hi":70.0,"lo":55.6},{"hi":62.0,"lo":49.6},{"hi":50.9,"lo":41.4},{"hi":41.7,"lo":34.3},{"hi":36.2,"lo":28.6}]},"chennai":{"months":[{"hi":82.4,"lo":71.4},{"hi":85.3,"lo":71.6},{"hi":89.2,"lo":75.3},{"hi":92.7,"lo":79.8},{"hi":95.1,"lo":82.0},{"hi":95.4,"lo":81.9},{"hi":93.0,"lo":80.1},{"hi":91.9,"lo":79.2},{"hi":90.3,"lo":78.7},{"hi":87.6,"lo":76.9},{"hi":83.5,"lo":75.0},{"hi":82.3,"lo":73.5}]}};
 const MONTHS=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
 const MAX=20;
-const K_CITIES="fw-cities",K_UNIT="fw-unit",K_CACHE="fw-cache",K_ARCH="fw-arch",K_BIG="fw-big",K_ASKED="fw-asked-save";   // the danpune.github.io origin is shared: keep the prefix
+const K_CITIES="fw-cities",K_UNIT="fw-unit",K_CACHE="fw-cache",K_ARCH="fw-arch",K_BIG="fw-big",K_THEME="fw-theme",K_ASKED="fw-asked-save";   // the danpune.github.io origin is shared: keep the prefix
 const FC="https://api.open-meteo.com/v1/forecast",AQ="https://air-quality-api.open-meteo.com/v1/air-quality",
       GEO="https://geocoding-api.open-meteo.com/v1/search",ARCH="https://archive-api.open-meteo.com/v1/archive";
 
@@ -663,7 +676,7 @@ function twoWeeks(f,ci,k,e){
     hits+='<rect class="hit" data-d="'+j+'" x="'+x.toFixed(1)+'" y="0" width="'+sl.toFixed(1)+'" height="'+Ht+'" fill="transparent"/>';
   }
   return '<div class="chart"><svg viewBox="0 0 '+Wd+' '+Ht+'" role="img" aria-label="Daily high and low temperatures for the last two weeks. Tap a day for details.">'
-    +'<defs>'+defs+'</defs><rect x="'+(pl+sl*(n-1)).toFixed(1)+'" y="'+(pt-20)+'" width="'+sl.toFixed(1)+'" height="'+(ph+20)+'" rx="4" fill="#e6f0fb"/>'
+    +'<defs>'+defs+'</defs><rect class="tband" x="'+(pl+sl*(n-1)).toFixed(1)+'" y="'+(pt-20)+'" width="'+sl.toFixed(1)+'" height="'+(ph+20)+'" rx="4" fill="#e6f0fb"/>'
     +'<rect class="selband" x="'+(pl+sl*(sel-from)).toFixed(1)+'" y="'+(pt-20)+'" width="'+sl.toFixed(1)+'" height="'+(ph+20+pb)+'" rx="4" fill="#fde68a" opacity=".55"/>'
     +grid+bars+lab+hits+'</svg></div><p class="muted" style="margin:2px 0;font-size:.85rem">Each bar runs from the day&rsquo;s low to its high. 💨 windy · 💧 rain. Tap a day:</p>'
     +'<div class="sel" data-sel="d">'+dayDetail(f,sel)+'</div>';
@@ -681,7 +694,7 @@ function yearBlock(c,ci,k){
   const lim=Math.max(2,Math.ceil(Math.max.apply(null,rows.map(function(r){return Math.abs(r.an*fac)}))/2)*2),
     Wd=340,Ht=170,pl=40,pr=4,pt=12,pb=26,ph=Ht-pt-pb,sl=(Wd-pl-pr)/rows.length,Y=function(v){return pt+ph*(1-(v+lim)/(2*lim))},y0=Y(0);
   const sel=selM[k]!=null&&selM[k]<rows.length?selM[k]:bq;
-  let g='<line x1="'+pl+'" x2="'+(Wd-pr)+'" y1="'+y0.toFixed(1)+'" y2="'+y0.toFixed(1)+'" stroke="#9aa6b5"/>'
+  let g='<line x1="'+pl+'" x2="'+(Wd-pr)+'" y1="'+y0.toFixed(1)+'" y2="'+y0.toFixed(1)+'" stroke="#9aa6b5" class="zero"/>'
     +'<text x="'+(pl-5)+'" y="'+(y0+4).toFixed(1)+'" text-anchor="end" font-size="12" fill="#5b6878">usual</text>'
     +'<text x="'+(pl-5)+'" y="'+(Y(lim)+8).toFixed(1)+'" text-anchor="end" font-size="12" fill="#5b6878">+'+lim+'°</text>'
     +'<text x="'+(pl-5)+'" y="'+(Y(-lim)).toFixed(1)+'" text-anchor="end" font-size="12" fill="#5b6878">−'+lim+'°</text>';
@@ -819,9 +832,18 @@ function toast(msg){const t=$("toast");t.textContent=msg;t.hidden=false;clearTim
 
 // ---------- page controls ----------
 function setUnit(u){unit=u;store(K_UNIT,u);$("uF").setAttribute("aria-pressed",String(u==="F"));$("uC").setAttribute("aria-pressed",String(u==="C"));render()}
+// Night mode: follows the phone's own setting until someone taps the switch; then their choice is remembered.
+function applyTheme(){
+  const t=stored(K_THEME),dark=t?t==="dark":!!(window.matchMedia&&matchMedia("(prefers-color-scheme: dark)").matches),b=$("nightBtn");
+  document.documentElement.classList.toggle("dark",dark);
+  b.textContent=dark?"☀️ Day":"🌙 Night";b.setAttribute("aria-label",dark?"Switch to day mode":"Switch to night mode");
+  const m=document.querySelector('meta[name="theme-color"]');if(m)m.content=dark?"#0d131a":"#1a5f9e";
+}
 function applyBig(){document.documentElement.classList.toggle("big",big);$("bigBtn").setAttribute("aria-pressed",String(big))}
 $("uF").addEventListener("click",function(){setUnit("F")});
 $("uC").addEventListener("click",function(){setUnit("C")});
+$("nightBtn").addEventListener("click",function(){store(K_THEME,document.documentElement.classList.contains("dark")?"light":"dark");applyTheme()});
+if(window.matchMedia){const mq=matchMedia("(prefers-color-scheme: dark)");if(mq.addEventListener)mq.addEventListener("change",applyTheme);else if(mq.addListener)mq.addListener(applyTheme)}
 $("bigBtn").addEventListener("click",function(){big=!big;store(K_BIG,big?1:0);applyBig()});
 $("refreshBtn").addEventListener("click",refresh);
 let rafId=0;
@@ -859,7 +881,7 @@ $("ctable").addEventListener("click",function(e){
     const k=sb.getAttribute("data-sort");
     if(!k)tSort=null;else if(tSort===k)tDir=-tDir;else{tSort=k;tDir=k==="name"?1:-1}   // names A-Z first; time and temperatures highest first
     render();
-    const again=$("ctable").querySelector('[data-sort="'+(k||"name")+'"]');if(again)again.focus({preventScroll:true});
+    const head=$("ctable").querySelector('[data-sort="'+(k||"name")+'"]');if(head)head.focus({preventScroll:true});   // not "again": that name is the refresh queue flag
     return;
   }
   const b=e.target.closest("[data-goto]");if(b){const card=$("card-"+b.getAttribute("data-goto"));if(card)card.scrollIntoView({block:"start"})}});   // no #anchor: the address bar carries the city list
@@ -1031,7 +1053,7 @@ function selftest(){
 
 // ---------- start ----------
 if(location.hash==="#selftest"){const r=selftest();console.log(r.length?"SELFTEST FAILED: "+r.join("; "):"SELFTEST OK");document.title=r.length?"SELFTEST FAILED":"SELFTEST OK"}
-setUnit(unit);applyBig();writeHash();loadCache();render();statusLine();refresh();
+setUnit(unit);applyBig();applyTheme();writeHash();loadCache();render();statusLine();refresh();
 setInterval(tick,20000);
 setInterval(refresh,30*60*1000);
 document.addEventListener("visibilitychange",function(){if(document.visibilityState==="visible"){tick();if(Date.now()-lastOK>10*60*1000)refresh()}});
